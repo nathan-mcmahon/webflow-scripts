@@ -1,4 +1,3 @@
-
 <script>
 window.addEventListener("load", () => {
   if (!window.gsap || !window.MorphSVGPlugin) {
@@ -36,6 +35,26 @@ window.addEventListener("load", () => {
       tailRightRatio: 0.22,
       tipNudgeX: -12
     },
+    // extra intermediate states for a more liquid morph
+    openPre: {
+      radius: 20,
+      tailWidth: 24,
+      tailHeight: 14,
+      tailOffsetX: -18,
+      tailLeftRatio: 0.58,
+      tailRightRatio: 0.42,
+      tipNudgeX: -1
+    },
+    closePre: {
+      radius: 22,
+      tailWidth: 28,
+      tailHeight: 16,
+      tailOffsetX: -30,
+      tailLeftRatio: 0.62,
+      tailRightRatio: 0.38,
+      tipNudgeX: -3
+    },
+
     sideInset: 6,
     topInset: 8,
     bottomInset: 8,
@@ -84,6 +103,23 @@ window.addEventListener("load", () => {
     `.replace(/\s+/g, " ").trim();
   }
 
+  function buildVariantPath(w, h, variant) {
+    return makeBubblePath(
+      w,
+      h,
+      variant.radius,
+      variant.tailWidth,
+      variant.tailHeight,
+      variant.tailOffsetX,
+      variant.tailLeftRatio,
+      variant.tailRightRatio,
+      variant.tipNudgeX,
+      CONFIG.topInset,
+      CONFIG.sideInset,
+      CONFIG.bottomInset
+    );
+  }
+
   function setupFaqShell(shell) {
     const accordionItem = shell.querySelector(".accordion-item");
     const toggle = shell.querySelector(".w-dropdown-toggle, .dropdown-toggle");
@@ -115,48 +151,11 @@ window.addEventListener("load", () => {
       svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
 
       return {
-        closed: makeBubblePath(
-          w,
-          h,
-          CONFIG.closed.radius,
-          CONFIG.closed.tailWidth,
-          CONFIG.closed.tailHeight,
-          CONFIG.closed.tailOffsetX,
-          CONFIG.closed.tailLeftRatio,
-          CONFIG.closed.tailRightRatio,
-          CONFIG.closed.tipNudgeX,
-          CONFIG.topInset,
-          CONFIG.sideInset,
-          CONFIG.bottomInset
-        ),
-        open: makeBubblePath(
-          w,
-          h,
-          CONFIG.open.radius,
-          CONFIG.open.tailWidth,
-          CONFIG.open.tailHeight,
-          CONFIG.open.tailOffsetX,
-          CONFIG.open.tailLeftRatio,
-          CONFIG.open.tailRightRatio,
-          CONFIG.open.tipNudgeX,
-          CONFIG.topInset,
-          CONFIG.sideInset,
-          CONFIG.bottomInset
-        ),
-        overshoot: makeBubblePath(
-          w,
-          h,
-          CONFIG.overshoot.radius,
-          CONFIG.overshoot.tailWidth,
-          CONFIG.overshoot.tailHeight,
-          CONFIG.overshoot.tailOffsetX,
-          CONFIG.overshoot.tailLeftRatio,
-          CONFIG.overshoot.tailRightRatio,
-          CONFIG.overshoot.tipNudgeX,
-          CONFIG.topInset,
-          CONFIG.sideInset,
-          CONFIG.bottomInset
-        )
+        closed: buildVariantPath(w, h, CONFIG.closed),
+        open: buildVariantPath(w, h, CONFIG.open),
+        overshoot: buildVariantPath(w, h, CONFIG.overshoot),
+        openPre: buildVariantPath(w, h, CONFIG.openPre),
+        closePre: buildVariantPath(w, h, CONFIG.closePre)
       };
     }
 
@@ -165,9 +164,12 @@ window.addEventListener("load", () => {
       path.dataset.closed = paths.closed;
       path.dataset.open = paths.open;
       path.dataset.overshoot = paths.overshoot;
+      path.dataset.openPre = paths.openPre;
+      path.dataset.closePre = paths.closePre;
+
       path.setAttribute("d", isOpen ? paths.open : paths.closed);
       path.setAttribute("fill", isOpen ? CONFIG.openFill : "transparent");
-      svg.style.transform = "scale(1)";
+      gsap.set(svg, { scale: 1, transformOrigin: "50% 50%" });
     }
 
     function animateToState(isOpen) {
@@ -175,51 +177,78 @@ window.addEventListener("load", () => {
       path.dataset.closed = paths.closed;
       path.dataset.open = paths.open;
       path.dataset.overshoot = paths.overshoot;
+      path.dataset.openPre = paths.openPre;
+      path.dataset.closePre = paths.closePre;
 
       if (tl) tl.kill();
       tl = gsap.timeline({ defaults: { overwrite: "auto" } });
 
       if (isOpen) {
         tl.to(path, {
+          duration: 0.10,
+          morphSVG: path.dataset.openPre,
+          ease: "power2.out"
+        }, 0)
+        .to(svg, {
+          duration: 0.10,
+          scaleX: 1.01,
+          scaleY: 0.985,
+          transformOrigin: "50% 50%",
+          ease: "power2.out"
+        }, 0)
+        .to(path, {
           duration: 0.12,
           morphSVG: path.dataset.overshoot,
           ease: "power3.out"
-        }, 0)
-        .to(svg, {
-          duration: 0.12,
-          scale: 1.025,
-          transformOrigin: "50% 50%",
-          ease: "power3.out"
-        }, 0)
-        .to(path, {
-          duration: 0.30,
-          morphSVG: path.dataset.open,
-          ease: "back.out(1.6)"
         })
         .to(svg, {
-          duration: 0.30,
-          scale: 1,
+          duration: 0.12,
+          scaleX: 1.025,
+          scaleY: 1.01,
+          ease: "power3.out"
+        }, "<")
+        .to(path, {
+          duration: 0.26,
+          morphSVG: path.dataset.open,
+          ease: "back.out(1.4)"
+        })
+        .to(svg, {
+          duration: 0.26,
+          scaleX: 1,
+          scaleY: 1,
           ease: "expo.out"
         }, "<")
         .to(path, {
           duration: 0.18,
           fill: CONFIG.openFill,
           ease: "power2.out"
-        }, 0.08);
+        }, 0.12);
       } else {
         tl.to(path, {
-          duration: 0.10,
-          morphSVG: path.dataset.overshoot,
+          duration: 0.08,
+          morphSVG: path.dataset.closePre,
           ease: "power2.in"
         }, 0)
         .to(svg, {
-          duration: 0.10,
-          scale: 0.992,
+          duration: 0.08,
+          scaleX: 0.995,
+          scaleY: 1.005,
           transformOrigin: "50% 50%",
           ease: "power2.in"
         }, 0)
         .to(path, {
-          duration: 0.24,
+          duration: 0.10,
+          morphSVG: path.dataset.overshoot,
+          ease: "power2.in"
+        })
+        .to(svg, {
+          duration: 0.10,
+          scaleX: 0.99,
+          scaleY: 0.995,
+          ease: "power2.in"
+        }, "<")
+        .to(path, {
+          duration: 0.22,
           morphSVG: path.dataset.closed,
           ease: "expo.out"
         })
@@ -229,8 +258,9 @@ window.addEventListener("load", () => {
           ease: "power2.out"
         }, 0)
         .to(svg, {
-          duration: 0.24,
-          scale: 1,
+          duration: 0.22,
+          scaleX: 1,
+          scaleY: 1,
           ease: "expo.out"
         }, "<");
       }
@@ -256,10 +286,10 @@ window.addEventListener("load", () => {
       }
     }
 
-    // initial state
+    // initial
     syncState(false);
 
-    // keep path matched to live size
+    // keep matched to live size
     const ro = new ResizeObserver(() => {
       applyStatic(getIsOpen());
     });
@@ -267,7 +297,7 @@ window.addEventListener("load", () => {
     ro.observe(accordionItem);
     ro.observe(answer);
 
-    // watch actual Webflow dropdown state changes
+    // watch real Webflow dropdown state
     const mo = new MutationObserver(() => {
       syncState(true);
     });
@@ -287,7 +317,7 @@ window.addEventListener("load", () => {
       attributeFilter: ["class"]
     });
 
-    // extra safety: let Webflow finish its own click handling first
+    // allow Webflow to finish first
     toggle.addEventListener("click", () => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -296,7 +326,6 @@ window.addEventListener("load", () => {
       });
     });
 
-    // outside clicks / escape / other dropdown interactions
     document.addEventListener("click", () => {
       requestAnimationFrame(() => {
         syncState(true);
