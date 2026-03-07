@@ -1,3 +1,4 @@
+
 <script>
 window.addEventListener("load", () => {
   if (!window.gsap || !window.MorphSVGPlugin) {
@@ -86,13 +87,23 @@ window.addEventListener("load", () => {
   function setupFaqShell(shell) {
     const accordionItem = shell.querySelector(".accordion-item");
     const toggle = shell.querySelector(".w-dropdown-toggle, .dropdown-toggle");
+    const answer = shell.querySelector(".answer, .w-dropdown-list");
     const svg = shell.querySelector(".faq-bubble-svg");
     const path = shell.querySelector(".faq-bubble-path");
 
-    if (!accordionItem || !toggle || !svg || !path) return;
+    if (!accordionItem || !toggle || !answer || !svg || !path) return;
 
-    let isOpen = false;
-    let tl;
+    let currentOpen = null;
+    let tl = null;
+
+    function getIsOpen() {
+      return (
+        toggle.getAttribute("aria-expanded") === "true" ||
+        toggle.classList.contains("w--open") ||
+        answer.classList.contains("w--open") ||
+        accordionItem.classList.contains("w--open")
+      );
+    }
 
     function buildPathSet() {
       const itemRect = accordionItem.getBoundingClientRect();
@@ -149,38 +160,23 @@ window.addEventListener("load", () => {
       };
     }
 
-    function applyStatic() {
+    function applyStatic(isOpen) {
       const paths = buildPathSet();
       path.dataset.closed = paths.closed;
       path.dataset.open = paths.open;
       path.dataset.overshoot = paths.overshoot;
       path.setAttribute("d", isOpen ? paths.open : paths.closed);
       path.setAttribute("fill", isOpen ? CONFIG.openFill : "transparent");
+      svg.style.transform = "scale(1)";
     }
 
-    applyStatic();
-
-    const ro = new ResizeObserver(() => {
+    function animateToState(isOpen) {
       const paths = buildPathSet();
       path.dataset.closed = paths.closed;
       path.dataset.open = paths.open;
       path.dataset.overshoot = paths.overshoot;
-      path.setAttribute("d", isOpen ? paths.open : paths.closed);
-    });
-
-    ro.observe(shell);
-    ro.observe(accordionItem);
-
-    toggle.addEventListener("click", () => {
-      isOpen = !isOpen;
 
       if (tl) tl.kill();
-
-      const paths = buildPathSet();
-      path.dataset.closed = paths.closed;
-      path.dataset.open = paths.open;
-      path.dataset.overshoot = paths.overshoot;
-
       tl = gsap.timeline({ defaults: { overwrite: "auto" } });
 
       if (isOpen) {
@@ -237,6 +233,81 @@ window.addEventListener("load", () => {
           scale: 1,
           ease: "expo.out"
         }, "<");
+      }
+    }
+
+    function syncState(animate = true) {
+      const isOpen = getIsOpen();
+
+      if (currentOpen === null) {
+        currentOpen = isOpen;
+        applyStatic(isOpen);
+        return;
+      }
+
+      if (isOpen === currentOpen) return;
+
+      currentOpen = isOpen;
+
+      if (animate) {
+        animateToState(isOpen);
+      } else {
+        applyStatic(isOpen);
+      }
+    }
+
+    // initial state
+    syncState(false);
+
+    // keep path matched to live size
+    const ro = new ResizeObserver(() => {
+      applyStatic(getIsOpen());
+    });
+    ro.observe(shell);
+    ro.observe(accordionItem);
+    ro.observe(answer);
+
+    // watch actual Webflow dropdown state changes
+    const mo = new MutationObserver(() => {
+      syncState(true);
+    });
+
+    mo.observe(toggle, {
+      attributes: true,
+      attributeFilter: ["class", "aria-expanded"]
+    });
+
+    mo.observe(answer, {
+      attributes: true,
+      attributeFilter: ["class", "style", "hidden"]
+    });
+
+    mo.observe(accordionItem, {
+      attributes: true,
+      attributeFilter: ["class"]
+    });
+
+    // extra safety: let Webflow finish its own click handling first
+    toggle.addEventListener("click", () => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          syncState(true);
+        });
+      });
+    });
+
+    // outside clicks / escape / other dropdown interactions
+    document.addEventListener("click", () => {
+      requestAnimationFrame(() => {
+        syncState(true);
+      });
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        requestAnimationFrame(() => {
+          syncState(true);
+        });
       }
     });
   }
