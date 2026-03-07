@@ -35,7 +35,6 @@ window.addEventListener("load", () => {
       tailRightRatio: 0.22,
       tipNudgeX: -12
     },
-    // extra intermediate states for a more liquid morph
     openPre: {
       radius: 20,
       tailWidth: 24,
@@ -54,7 +53,6 @@ window.addEventListener("load", () => {
       tailRightRatio: 0.38,
       tipNudgeX: -3
     },
-
     sideInset: 6,
     topInset: 8,
     bottomInset: 8,
@@ -103,23 +101,6 @@ window.addEventListener("load", () => {
     `.replace(/\s+/g, " ").trim();
   }
 
-  function buildVariantPath(w, h, variant) {
-    return makeBubblePath(
-      w,
-      h,
-      variant.radius,
-      variant.tailWidth,
-      variant.tailHeight,
-      variant.tailOffsetX,
-      variant.tailLeftRatio,
-      variant.tailRightRatio,
-      variant.tipNudgeX,
-      CONFIG.topInset,
-      CONFIG.sideInset,
-      CONFIG.bottomInset
-    );
-  }
-
   function setupFaqShell(shell) {
     const accordionItem = shell.querySelector(".accordion-item");
     const toggle = shell.querySelector(".w-dropdown-toggle, .dropdown-toggle");
@@ -131,6 +112,7 @@ window.addEventListener("load", () => {
 
     let currentOpen = null;
     let tl = null;
+    let isAnimating = false;
 
     function getIsOpen() {
       return (
@@ -151,37 +133,108 @@ window.addEventListener("load", () => {
       svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
 
       return {
-        closed: buildVariantPath(w, h, CONFIG.closed),
-        open: buildVariantPath(w, h, CONFIG.open),
-        overshoot: buildVariantPath(w, h, CONFIG.overshoot),
-        openPre: buildVariantPath(w, h, CONFIG.openPre),
-        closePre: buildVariantPath(w, h, CONFIG.closePre)
+        closed: makeBubblePath(
+          w, h,
+          CONFIG.closed.radius,
+          CONFIG.closed.tailWidth,
+          CONFIG.closed.tailHeight,
+          CONFIG.closed.tailOffsetX,
+          CONFIG.closed.tailLeftRatio,
+          CONFIG.closed.tailRightRatio,
+          CONFIG.closed.tipNudgeX,
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
+        ),
+        open: makeBubblePath(
+          w, h,
+          CONFIG.open.radius,
+          CONFIG.open.tailWidth,
+          CONFIG.open.tailHeight,
+          CONFIG.open.tailOffsetX,
+          CONFIG.open.tailLeftRatio,
+          CONFIG.open.tailRightRatio,
+          CONFIG.open.tipNudgeX,
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
+        ),
+        overshoot: makeBubblePath(
+          w, h,
+          CONFIG.overshoot.radius,
+          CONFIG.overshoot.tailWidth,
+          CONFIG.overshoot.tailHeight,
+          CONFIG.overshoot.tailOffsetX,
+          CONFIG.overshoot.tailLeftRatio,
+          CONFIG.overshoot.tailRightRatio,
+          CONFIG.overshoot.tipNudgeX,
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
+        ),
+        openPre: makeBubblePath(
+          w, h,
+          CONFIG.openPre.radius,
+          CONFIG.openPre.tailWidth,
+          CONFIG.openPre.tailHeight,
+          CONFIG.openPre.tailOffsetX,
+          CONFIG.openPre.tailLeftRatio,
+          CONFIG.openPre.tailRightRatio,
+          CONFIG.openPre.tipNudgeX,
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
+        ),
+        closePre: makeBubblePath(
+          w, h,
+          CONFIG.closePre.radius,
+          CONFIG.closePre.tailWidth,
+          CONFIG.closePre.tailHeight,
+          CONFIG.closePre.tailOffsetX,
+          CONFIG.closePre.tailLeftRatio,
+          CONFIG.closePre.tailRightRatio,
+          CONFIG.closePre.tipNudgeX,
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
+        )
       };
+    }
+
+    function storePathSet(paths) {
+      path.dataset.closed = paths.closed;
+      path.dataset.open = paths.open;
+      path.dataset.overshoot = paths.overshoot;
+      path.dataset.openPre = paths.openPre;
+      path.dataset.closePre = paths.closePre;
     }
 
     function applyStatic(isOpen) {
       const paths = buildPathSet();
-      path.dataset.closed = paths.closed;
-      path.dataset.open = paths.open;
-      path.dataset.overshoot = paths.overshoot;
-      path.dataset.openPre = paths.openPre;
-      path.dataset.closePre = paths.closePre;
-
+      storePathSet(paths);
       path.setAttribute("d", isOpen ? paths.open : paths.closed);
       path.setAttribute("fill", isOpen ? CONFIG.openFill : "transparent");
-      gsap.set(svg, { scale: 1, transformOrigin: "50% 50%" });
+      gsap.set(svg, { scaleX: 1, scaleY: 1, transformOrigin: "50% 50%" });
+    }
+
+    function refreshPathDataOnly() {
+      const paths = buildPathSet();
+      storePathSet(paths);
     }
 
     function animateToState(isOpen) {
-      const paths = buildPathSet();
-      path.dataset.closed = paths.closed;
-      path.dataset.open = paths.open;
-      path.dataset.overshoot = paths.overshoot;
-      path.dataset.openPre = paths.openPre;
-      path.dataset.closePre = paths.closePre;
+      refreshPathDataOnly();
 
       if (tl) tl.kill();
-      tl = gsap.timeline({ defaults: { overwrite: "auto" } });
+      isAnimating = true;
+
+      tl = gsap.timeline({
+        defaults: { overwrite: "auto" },
+        onComplete: () => {
+          isAnimating = false;
+          applyStatic(isOpen);
+        }
+      });
 
       if (isOpen) {
         tl.to(path, {
@@ -286,18 +339,23 @@ window.addEventListener("load", () => {
       }
     }
 
-    // initial
+    // initial state
     syncState(false);
 
-    // keep matched to live size
+    // keep path data matched to live size, but don't flatten active animation
     const ro = new ResizeObserver(() => {
-      applyStatic(getIsOpen());
+      if (isAnimating) {
+        refreshPathDataOnly();
+      } else {
+        applyStatic(getIsOpen());
+      }
     });
+
     ro.observe(shell);
     ro.observe(accordionItem);
     ro.observe(answer);
 
-    // watch real Webflow dropdown state
+    // observe actual Webflow dropdown state
     const mo = new MutationObserver(() => {
       syncState(true);
     });
@@ -317,7 +375,7 @@ window.addEventListener("load", () => {
       attributeFilter: ["class"]
     });
 
-    // allow Webflow to finish first
+    // allow Webflow to finish its own state updates first
     toggle.addEventListener("click", () => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
