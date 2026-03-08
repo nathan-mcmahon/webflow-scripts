@@ -10,49 +10,72 @@ window.addEventListener("load", () => {
   const CONFIG = {
     closed: {
       radius: 12,
-      tailWidth: 16,
+      tailWidth: 12,
       tailHeight: 8,
-      tailOffsetX: 58,
-      tailLeftRatio: 0.42,
-      tailRightRatio: 0.58,
-      tipNudgeX: 4
+      tailOffsetX: 96,
+      tailLeftRatio: 0.5,
+      tailRightRatio: 0.5,
+      tipNudgeX: 10,
+      tipNudgeY: 0,
+      tailCurveSkew: 0.08
     },
-    open: {
-      radius: 28,
-      tailWidth: 38,
-      tailHeight: 24,
-      tailOffsetX: -78,
-      tailLeftRatio: 0.72,
-      tailRightRatio: 0.28,
-      tipNudgeX: -8
+    glide1: {
+      radius: 12,
+      tailWidth: 14,
+      tailHeight: 11,
+      tailOffsetX: 74,
+      tailLeftRatio: 0.54,
+      tailRightRatio: 0.46,
+      tipNudgeX: 6,
+      tipNudgeY: 0,
+      tailCurveSkew: 0.02
     },
-    overshoot: {
-      radius: 32,
-      tailWidth: 44,
-      tailHeight: 30,
-      tailOffsetX: -92,
-      tailLeftRatio: 0.78,
-      tailRightRatio: 0.22,
-      tipNudgeX: -12
-    },
-    openPre: {
-      radius: 20,
-      tailWidth: 24,
-      tailHeight: 14,
-      tailOffsetX: -18,
+    glide2: {
+      radius: 14,
+      tailWidth: 18,
+      tailHeight: 15,
+      tailOffsetX: 38,
       tailLeftRatio: 0.58,
       tailRightRatio: 0.42,
-      tipNudgeX: -1
+      tipNudgeX: 0,
+      tipNudgeY: 0,
+      tailCurveSkew: -0.06
     },
-    closePre: {
-      radius: 22,
-      tailWidth: 28,
-      tailHeight: 16,
-      tailOffsetX: -30,
-      tailLeftRatio: 0.62,
-      tailRightRatio: 0.38,
-      tipNudgeX: -3
+    glide3: {
+      radius: 16,
+      tailWidth: 24,
+      tailHeight: 20,
+      tailOffsetX: -18,
+      tailLeftRatio: 0.64,
+      tailRightRatio: 0.36,
+      tipNudgeX: -8,
+      tipNudgeY: 0,
+      tailCurveSkew: -0.14
     },
+    open: {
+      radius: 24,
+      tailWidth: 34,
+      tailHeight: 26,
+      tailOffsetX: -96,
+      tailLeftRatio: 0.72,
+      tailRightRatio: 0.28,
+      tipNudgeX: -18,
+      tipNudgeY: 0,
+      tailCurveSkew: -0.26
+    },
+    overshoot: {
+      radius: 26,
+      tailWidth: 40,
+      tailHeight: 30,
+      tailOffsetX: -106,
+      tailLeftRatio: 0.76,
+      tailRightRatio: 0.24,
+      tipNudgeX: -24,
+      tipNudgeY: 0,
+      tailCurveSkew: -0.34
+    },
+    minFrameHeight: 80,
+    frameHeightPad: 20,
     sideInset: 6,
     topInset: 8,
     bottomInset: 8,
@@ -69,20 +92,35 @@ window.addEventListener("load", () => {
     tailLeftRatio,
     tailRightRatio,
     tipNudgeX,
+    tipNudgeY,
+    tailCurveSkew,
+    bodyBottom,
     topInset,
     sideInset,
     bottomInset
   ) {
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
     const left = sideInset;
     const top = topInset;
     const right = w - sideInset;
-    const bodyBottom = h - tailHeight - bottomInset;
 
-    const centerX = w / 2 + tailOffsetX;
-    const tailBaseLeft = centerX - (tailWidth * tailLeftRatio);
-    const tailBaseRight = centerX + (tailWidth * tailRightRatio);
+    const centerX = clamp(w / 2 + tailOffsetX, left + r + 4, right - r - 4);
+    const rawTailBaseLeft = centerX - (tailWidth * tailLeftRatio);
+    const rawTailBaseRight = centerX + (tailWidth * tailRightRatio);
+    const tailBaseLeft = clamp(rawTailBaseLeft, left + r + 2, right - r - 8);
+    const tailBaseRight = clamp(rawTailBaseRight, left + r + 8, right - r - 2);
     const tipX = centerX + tipNudgeX;
-    const tipY = h - bottomInset;
+    const tipY = clamp(
+      bodyBottom + tailHeight + tipNudgeY,
+      bodyBottom + 2,
+      h - bottomInset
+    );
+
+    const ctrlShift = tailWidth * tailCurveSkew;
+    const outCtrlX = tailBaseRight - tailWidth * 0.28 + ctrlShift;
+    const outCtrlY = bodyBottom + tailHeight * 0.44;
+    const inCtrlX = tailBaseLeft + tailWidth * 0.34 + ctrlShift;
+    const inCtrlY = bodyBottom + tailHeight * 0.72;
 
     return `
       M ${left + r} ${top}
@@ -91,8 +129,8 @@ window.addEventListener("load", () => {
       V ${bodyBottom - r}
       Q ${right} ${bodyBottom} ${right - r} ${bodyBottom}
       H ${tailBaseRight}
-      L ${tipX} ${tipY}
-      L ${tailBaseLeft} ${bodyBottom}
+      Q ${outCtrlX} ${outCtrlY} ${tipX} ${tipY}
+      Q ${inCtrlX} ${inCtrlY} ${tailBaseLeft} ${bodyBottom}
       H ${left + r}
       Q ${left} ${bodyBottom} ${left} ${bodyBottom - r}
       V ${top + r}
@@ -126,11 +164,32 @@ window.addEventListener("load", () => {
     function buildPathSet() {
       const itemRect = accordionItem.getBoundingClientRect();
       const shellRect = shell.getBoundingClientRect();
+      const toggleRect = toggle.getBoundingClientRect();
 
-      const w = Math.round(itemRect.width);
-      const h = Math.max(80, Math.round(shellRect.height));
+      const w = Math.max(
+        80,
+        Math.round(Math.max(itemRect.width, shellRect.width, toggleRect.width))
+      );
+      const baseFrameH = Math.max(
+        CONFIG.minFrameHeight,
+        Math.round(toggleRect.height + CONFIG.frameHeightPad)
+      );
+      const h = Math.max(baseFrameH, Math.round(shellRect.height));
+      const maxBodyBottom = h - CONFIG.bottomInset - 1;
+      const closedBodyBottom = Math.min(
+        h - CONFIG.bottomInset - 1,
+        baseFrameH - CONFIG.closed.tailHeight - CONFIG.bottomInset
+      );
+      const openBodyBottom = Math.max(
+        closedBodyBottom,
+        Math.min(maxBodyBottom, h - CONFIG.open.tailHeight - CONFIG.bottomInset)
+      );
+      const bodyAt = (t) => Math.round(
+        closedBodyBottom + ((openBodyBottom - closedBodyBottom) * t)
+      );
 
       svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      svg.setAttribute("preserveAspectRatio", "none");
 
       return {
         closed: makeBubblePath(
@@ -142,6 +201,57 @@ window.addEventListener("load", () => {
           CONFIG.closed.tailLeftRatio,
           CONFIG.closed.tailRightRatio,
           CONFIG.closed.tipNudgeX,
+          CONFIG.closed.tipNudgeY,
+          CONFIG.closed.tailCurveSkew,
+          bodyAt(0),
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
+        ),
+        glide1: makeBubblePath(
+          w, h,
+          CONFIG.glide1.radius,
+          CONFIG.glide1.tailWidth,
+          CONFIG.glide1.tailHeight,
+          CONFIG.glide1.tailOffsetX,
+          CONFIG.glide1.tailLeftRatio,
+          CONFIG.glide1.tailRightRatio,
+          CONFIG.glide1.tipNudgeX,
+          CONFIG.glide1.tipNudgeY,
+          CONFIG.glide1.tailCurveSkew,
+          bodyAt(0.24),
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
+        ),
+        glide2: makeBubblePath(
+          w, h,
+          CONFIG.glide2.radius,
+          CONFIG.glide2.tailWidth,
+          CONFIG.glide2.tailHeight,
+          CONFIG.glide2.tailOffsetX,
+          CONFIG.glide2.tailLeftRatio,
+          CONFIG.glide2.tailRightRatio,
+          CONFIG.glide2.tipNudgeX,
+          CONFIG.glide2.tipNudgeY,
+          CONFIG.glide2.tailCurveSkew,
+          bodyAt(0.5),
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
+        ),
+        glide3: makeBubblePath(
+          w, h,
+          CONFIG.glide3.radius,
+          CONFIG.glide3.tailWidth,
+          CONFIG.glide3.tailHeight,
+          CONFIG.glide3.tailOffsetX,
+          CONFIG.glide3.tailLeftRatio,
+          CONFIG.glide3.tailRightRatio,
+          CONFIG.glide3.tipNudgeX,
+          CONFIG.glide3.tipNudgeY,
+          CONFIG.glide3.tailCurveSkew,
+          bodyAt(0.78),
           CONFIG.topInset,
           CONFIG.sideInset,
           CONFIG.bottomInset
@@ -155,6 +265,9 @@ window.addEventListener("load", () => {
           CONFIG.open.tailLeftRatio,
           CONFIG.open.tailRightRatio,
           CONFIG.open.tipNudgeX,
+          CONFIG.open.tipNudgeY,
+          CONFIG.open.tailCurveSkew,
+          bodyAt(1),
           CONFIG.topInset,
           CONFIG.sideInset,
           CONFIG.bottomInset
@@ -168,32 +281,9 @@ window.addEventListener("load", () => {
           CONFIG.overshoot.tailLeftRatio,
           CONFIG.overshoot.tailRightRatio,
           CONFIG.overshoot.tipNudgeX,
-          CONFIG.topInset,
-          CONFIG.sideInset,
-          CONFIG.bottomInset
-        ),
-        openPre: makeBubblePath(
-          w, h,
-          CONFIG.openPre.radius,
-          CONFIG.openPre.tailWidth,
-          CONFIG.openPre.tailHeight,
-          CONFIG.openPre.tailOffsetX,
-          CONFIG.openPre.tailLeftRatio,
-          CONFIG.openPre.tailRightRatio,
-          CONFIG.openPre.tipNudgeX,
-          CONFIG.topInset,
-          CONFIG.sideInset,
-          CONFIG.bottomInset
-        ),
-        closePre: makeBubblePath(
-          w, h,
-          CONFIG.closePre.radius,
-          CONFIG.closePre.tailWidth,
-          CONFIG.closePre.tailHeight,
-          CONFIG.closePre.tailOffsetX,
-          CONFIG.closePre.tailLeftRatio,
-          CONFIG.closePre.tailRightRatio,
-          CONFIG.closePre.tipNudgeX,
+          CONFIG.overshoot.tipNudgeY,
+          CONFIG.overshoot.tailCurveSkew,
+          bodyAt(1.04),
           CONFIG.topInset,
           CONFIG.sideInset,
           CONFIG.bottomInset
@@ -203,10 +293,24 @@ window.addEventListener("load", () => {
 
     function storePathSet(paths) {
       path.dataset.closed = paths.closed;
+      path.dataset.glide1 = paths.glide1;
+      path.dataset.glide2 = paths.glide2;
+      path.dataset.glide3 = paths.glide3;
       path.dataset.open = paths.open;
       path.dataset.overshoot = paths.overshoot;
-      path.dataset.openPre = paths.openPre;
-      path.dataset.closePre = paths.closePre;
+    }
+
+    function morphStep(targetShape, duration, ease) {
+      return {
+        duration,
+        morphSVG: {
+          shape: targetShape,
+          shapeIndex: 0,
+          type: "rotational",
+          map: "position"
+        },
+        ease
+      };
     }
 
     function applyStatic(isOpen) {
@@ -237,84 +341,57 @@ window.addEventListener("load", () => {
       });
 
       if (isOpen) {
-        tl.to(path, {
-          duration: 0.10,
-          morphSVG: path.dataset.openPre,
-          ease: "power2.out"
-        }, 0)
+        tl.to(path, morphStep(path.dataset.glide1, 0.10, "sine.inOut"), 0)
         .to(svg, {
           duration: 0.10,
-          scaleX: 1.01,
-          scaleY: 0.985,
+          scaleX: 1.006,
+          scaleY: 0.998,
           transformOrigin: "50% 50%",
-          ease: "power2.out"
+          ease: "sine.inOut"
         }, 0)
-        .to(path, {
-          duration: 0.12,
-          morphSVG: path.dataset.overshoot,
-          ease: "power3.out"
-        })
+        .to(path, morphStep(path.dataset.glide2, 0.11, "sine.inOut"))
+        .to(path, morphStep(path.dataset.glide3, 0.13, "sine.inOut"))
+        .to(path, morphStep(path.dataset.overshoot, 0.16, "sine.out"))
         .to(svg, {
-          duration: 0.12,
-          scaleX: 1.025,
-          scaleY: 1.01,
-          ease: "power3.out"
+          duration: 0.16,
+          scaleX: 1.015,
+          scaleY: 1.006,
+          ease: "sine.out"
         }, "<")
-        .to(path, {
-          duration: 0.26,
-          morphSVG: path.dataset.open,
-          ease: "back.out(1.4)"
-        })
+        .to(path, morphStep(path.dataset.open, 0.18, "sine.inOut"))
         .to(svg, {
-          duration: 0.26,
+          duration: 0.18,
           scaleX: 1,
           scaleY: 1,
-          ease: "expo.out"
+          ease: "sine.inOut"
         }, "<")
         .to(path, {
           duration: 0.18,
           fill: CONFIG.openFill,
-          ease: "power2.out"
-        }, 0.12);
+          ease: "sine.out"
+        }, 0.05);
       } else {
-        tl.to(path, {
-          duration: 0.08,
-          morphSVG: path.dataset.closePre,
-          ease: "power2.in"
-        }, 0)
+        tl.to(path, morphStep(path.dataset.glide3, 0.14, "sine.inOut"), 0)
         .to(svg, {
-          duration: 0.08,
-          scaleX: 0.995,
-          scaleY: 1.005,
-          transformOrigin: "50% 50%",
-          ease: "power2.in"
-        }, 0)
-        .to(path, {
-          duration: 0.10,
-          morphSVG: path.dataset.overshoot,
-          ease: "power2.in"
-        })
-        .to(svg, {
-          duration: 0.10,
-          scaleX: 0.99,
-          scaleY: 0.995,
-          ease: "power2.in"
-        }, "<")
-        .to(path, {
-          duration: 0.22,
-          morphSVG: path.dataset.closed,
-          ease: "expo.out"
-        })
-        .to(path, {
           duration: 0.14,
+          scaleX: 1.004,
+          scaleY: 1.004,
+          transformOrigin: "50% 50%",
+          ease: "sine.inOut"
+        }, 0)
+        .to(path, morphStep(path.dataset.glide2, 0.13, "sine.inOut"))
+        .to(path, morphStep(path.dataset.glide1, 0.12, "sine.inOut"))
+        .to(path, morphStep(path.dataset.closed, 0.2, "sine.out"))
+        .to(path, {
+          duration: 0.18,
           fill: "transparent",
-          ease: "power2.out"
+          ease: "sine.out"
         }, 0)
         .to(svg, {
-          duration: 0.22,
+          duration: 0.2,
           scaleX: 1,
           scaleY: 1,
-          ease: "expo.out"
+          ease: "sine.out"
         }, "<");
       }
     }
@@ -353,6 +430,7 @@ window.addEventListener("load", () => {
 
     ro.observe(shell);
     ro.observe(accordionItem);
+    ro.observe(toggle);
     ro.observe(answer);
 
     // observe actual Webflow dropdown state
