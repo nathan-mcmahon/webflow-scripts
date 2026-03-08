@@ -341,58 +341,45 @@ window.addEventListener("load", () => {
       });
 
       if (isOpen) {
-        tl.to(path, morphStep(path.dataset.glide1, 0.10, "sine.inOut"), 0)
-        .to(svg, {
-          duration: 0.10,
-          scaleX: 1.006,
-          scaleY: 0.998,
-          transformOrigin: "50% 50%",
-          ease: "sine.inOut"
-        }, 0)
-        .to(path, morphStep(path.dataset.glide2, 0.11, "sine.inOut"))
-        .to(path, morphStep(path.dataset.glide3, 0.13, "sine.inOut"))
-        .to(path, morphStep(path.dataset.overshoot, 0.16, "sine.out"))
-        .to(svg, {
-          duration: 0.16,
-          scaleX: 1.015,
-          scaleY: 1.006,
-          ease: "sine.out"
-        }, "<")
-        .to(path, morphStep(path.dataset.open, 0.18, "sine.inOut"))
-        .to(svg, {
-          duration: 0.18,
-          scaleX: 1,
-          scaleY: 1,
-          ease: "sine.inOut"
-        }, "<")
+        tl.to(path, morphStep(path.dataset.open, 0.23, "power2.out"), 0)
         .to(path, {
-          duration: 0.18,
+          duration: 0.2,
           fill: CONFIG.openFill,
           ease: "sine.out"
-        }, 0.05);
-      } else {
-        tl.to(path, morphStep(path.dataset.glide3, 0.14, "sine.inOut"), 0)
+        }, 0.02)
         .to(svg, {
-          duration: 0.14,
-          scaleX: 1.004,
+          duration: 0.23,
+          scaleX: 1.01,
           scaleY: 1.004,
           transformOrigin: "50% 50%",
-          ease: "sine.inOut"
+          ease: "power2.out"
         }, 0)
-        .to(path, morphStep(path.dataset.glide2, 0.13, "sine.inOut"))
-        .to(path, morphStep(path.dataset.glide1, 0.12, "sine.inOut"))
-        .to(path, morphStep(path.dataset.closed, 0.2, "sine.out"))
+        .to(svg, {
+          duration: 0.14,
+          scaleX: 1,
+          scaleY: 1,
+          ease: "sine.out"
+        }, 0.12);
+      } else {
+        tl.to(path, morphStep(path.dataset.closed, 0.21, "power2.inOut"), 0)
         .to(path, {
           duration: 0.18,
           fill: "transparent",
           ease: "sine.out"
         }, 0)
         .to(svg, {
-          duration: 0.2,
+          duration: 0.21,
+          scaleX: 1.006,
+          scaleY: 1.002,
+          transformOrigin: "50% 50%",
+          ease: "power2.inOut"
+        }, 0)
+        .to(svg, {
+          duration: 0.12,
           scaleX: 1,
           scaleY: 1,
           ease: "sine.out"
-        }, "<");
+        }, 0.1);
       }
     }
 
