@@ -10,8 +10,8 @@ window.addEventListener("load", () => {
   const CONFIG = {
     closed: {
       radius: 12,
-      tailWidth: 12,
-      tailHeight: 8,
+      tailWidth: 14,
+      tailHeight: 9,
       tailOffsetX: 96,
       tailLeftRatio: 0.5,
       tailRightRatio: 0.5,
@@ -21,8 +21,8 @@ window.addEventListener("load", () => {
     },
     glide1: {
       radius: 12,
-      tailWidth: 14,
-      tailHeight: 11,
+      tailWidth: 16,
+      tailHeight: 12,
       tailOffsetX: 74,
       tailLeftRatio: 0.54,
       tailRightRatio: 0.46,
@@ -32,8 +32,8 @@ window.addEventListener("load", () => {
     },
     glide2: {
       radius: 14,
-      tailWidth: 18,
-      tailHeight: 15,
+      tailWidth: 20,
+      tailHeight: 16,
       tailOffsetX: 38,
       tailLeftRatio: 0.58,
       tailRightRatio: 0.42,
@@ -43,8 +43,8 @@ window.addEventListener("load", () => {
     },
     glide3: {
       radius: 16,
-      tailWidth: 24,
-      tailHeight: 20,
+      tailWidth: 26,
+      tailHeight: 21,
       tailOffsetX: -18,
       tailLeftRatio: 0.64,
       tailRightRatio: 0.36,
@@ -54,8 +54,8 @@ window.addEventListener("load", () => {
     },
     open: {
       radius: 24,
-      tailWidth: 34,
-      tailHeight: 26,
+      tailWidth: 36,
+      tailHeight: 27,
       tailOffsetX: -96,
       tailLeftRatio: 0.72,
       tailRightRatio: 0.28,
@@ -65,8 +65,8 @@ window.addEventListener("load", () => {
     },
     overshoot: {
       radius: 26,
-      tailWidth: 40,
-      tailHeight: 30,
+      tailWidth: 42,
+      tailHeight: 31,
       tailOffsetX: -106,
       tailLeftRatio: 0.76,
       tailRightRatio: 0.24,
@@ -361,25 +361,28 @@ window.addEventListener("load", () => {
           ease: "sine.out"
         }, 0.12);
       } else {
-        tl.to(path, morphStep(path.dataset.closed, 0.21, "power2.inOut"), 0)
+        tl.to(path, morphStep(path.dataset.glide3, 0.14, "sine.inOut"), 0)
+        .to(svg, {
+          duration: 0.14,
+          scaleX: 1.004,
+          scaleY: 1.004,
+          transformOrigin: "50% 50%",
+          ease: "sine.inOut"
+        }, 0)
+        .to(path, morphStep(path.dataset.glide2, 0.13, "sine.inOut"))
+        .to(path, morphStep(path.dataset.glide1, 0.12, "sine.inOut"))
+        .to(path, morphStep(path.dataset.closed, 0.2, "sine.out"))
         .to(path, {
           duration: 0.18,
           fill: "transparent",
           ease: "sine.out"
         }, 0)
         .to(svg, {
-          duration: 0.21,
-          scaleX: 1.006,
-          scaleY: 1.002,
-          transformOrigin: "50% 50%",
-          ease: "power2.inOut"
-        }, 0)
-        .to(svg, {
-          duration: 0.12,
+          duration: 0.2,
           scaleX: 1,
           scaleY: 1,
           ease: "sine.out"
-        }, 0.1);
+        }, "<");
       }
     }
 
