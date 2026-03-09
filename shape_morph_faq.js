@@ -152,7 +152,9 @@ window.addEventListener("load", () => {
       svg.setAttribute("class", "faq-bubble-svg");
       svg.setAttribute("aria-hidden", "true");
       svg.setAttribute("focusable", "false");
-      accordionItem.appendChild(svg);
+      accordionItem.prepend(svg);
+    } else if (svg.parentNode === accordionItem && accordionItem.firstElementChild !== svg) {
+      accordionItem.insertBefore(svg, accordionItem.firstChild);
     }
 
     if (!path) {
@@ -166,11 +168,13 @@ window.addEventListener("load", () => {
     if (getComputedStyle(accordionItem).position === "static") {
       accordionItem.style.position = "relative";
     }
+    accordionItem.style.isolation = "isolate";
 
     svg.style.position = "absolute";
     svg.style.inset = "0";
     svg.style.width = "100%";
     svg.style.height = "100%";
+    svg.style.zIndex = "0";
     svg.style.pointerEvents = "none";
     svg.style.overflow = "visible";
 
@@ -181,6 +185,19 @@ window.addEventListener("load", () => {
     const toggle = accordionItem.querySelector(".w-dropdown-toggle, .dropdown-toggle");
     const answer = accordionItem.querySelector(".answer, .w-dropdown-list");
     if (!accordionItem || !toggle || !answer) return;
+
+    if (getComputedStyle(toggle).position === "static") {
+      toggle.style.position = "relative";
+    }
+    if (!toggle.style.zIndex) {
+      toggle.style.zIndex = "1";
+    }
+    if (getComputedStyle(answer).position === "static") {
+      answer.style.position = "relative";
+    }
+    if (!answer.style.zIndex) {
+      answer.style.zIndex = "1";
+    }
 
     const bubble = ensureBubbleForItem(accordionItem);
     const svg = bubble?.svg;
