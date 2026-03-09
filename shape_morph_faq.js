@@ -1,5 +1,9 @@
 <script>
 window.addEventListener("load", () => {
+  // Guard against duplicate embed/script instances on the same page.
+  if (window.__faqBubbleMorphInit) return;
+  window.__faqBubbleMorphInit = true;
+
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn("GSAP or MorphSVGPlugin missing.");
     return;
@@ -9,20 +13,20 @@ window.addEventListener("load", () => {
 
   const CONFIG = {
     closed: {
-      radius: 12,
-      tailWidth: 14,
-      tailHeight: 9,
-      tailOffsetX: 96,
+      radius: 20,
+      tailWidth: 35,
+      tailHeight: 20,
+      tailOffsetX: 300,
       tailLeftRatio: 0.5,
       tailRightRatio: 0.5,
-      tipNudgeX: 10,
+      tipNudgeX: 1,
       tipNudgeY: 0,
       tailCurveSkew: 0.08
     },
     glide1: {
-      radius: 12,
-      tailWidth: 16,
-      tailHeight: 12,
+      radius: 20,
+      tailWidth: 35,
+      tailHeight: 20,
       tailOffsetX: 74,
       tailLeftRatio: 0.54,
       tailRightRatio: 0.46,
@@ -31,9 +35,9 @@ window.addEventListener("load", () => {
       tailCurveSkew: 0.02
     },
     glide2: {
-      radius: 14,
-      tailWidth: 20,
-      tailHeight: 16,
+      radius: 20,
+      tailWidth: 35,
+      tailHeight: 20,
       tailOffsetX: 38,
       tailLeftRatio: 0.58,
       tailRightRatio: 0.42,
@@ -42,9 +46,9 @@ window.addEventListener("load", () => {
       tailCurveSkew: -0.06
     },
     glide3: {
-      radius: 16,
+      radius: 20,
       tailWidth: 26,
-      tailHeight: 21,
+      tailHeight: 35,
       tailOffsetX: -18,
       tailLeftRatio: 0.64,
       tailRightRatio: 0.36,
@@ -53,10 +57,10 @@ window.addEventListener("load", () => {
       tailCurveSkew: -0.14
     },
     open: {
-      radius: 24,
-      tailWidth: 36,
-      tailHeight: 27,
-      tailOffsetX: -96,
+      radius: 35,
+      tailWidth: 42,
+      tailHeight: 45,
+      tailOffsetX: -300,
       tailLeftRatio: 0.72,
       tailRightRatio: 0.28,
       tipNudgeX: -18,
@@ -65,7 +69,7 @@ window.addEventListener("load", () => {
     },
     overshoot: {
       radius: 26,
-      tailWidth: 42,
+      tailWidth: 55,
       tailHeight: 31,
       tailOffsetX: -106,
       tailLeftRatio: 0.76,
@@ -74,7 +78,7 @@ window.addEventListener("load", () => {
       tipNudgeY: 0,
       tailCurveSkew: -0.34
     },
-    minFrameHeight: 80,
+    minFrameHeight: 90,
     frameHeightPad: 20,
     sideInset: 6,
     topInset: 8,
@@ -139,14 +143,52 @@ window.addEventListener("load", () => {
     `.replace(/\s+/g, " ").trim();
   }
 
-  function setupFaqShell(shell) {
-    const accordionItem = shell.querySelector(".accordion-item");
-    const toggle = shell.querySelector(".w-dropdown-toggle, .dropdown-toggle");
-    const answer = shell.querySelector(".answer, .w-dropdown-list");
-    const svg = shell.querySelector(".faq-bubble-svg");
-    const path = shell.querySelector(".faq-bubble-path");
+  function ensureBubbleForItem(accordionItem) {
+    let svg = accordionItem.querySelector(".faq-bubble-svg");
+    let path = accordionItem.querySelector(".faq-bubble-path");
 
-    if (!accordionItem || !toggle || !answer || !svg || !path) return;
+    if (!svg) {
+      svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("class", "faq-bubble-svg");
+      svg.setAttribute("aria-hidden", "true");
+      svg.setAttribute("focusable", "false");
+      accordionItem.appendChild(svg);
+    }
+
+    if (!path) {
+      path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("class", "faq-bubble-path");
+      svg.appendChild(path);
+    } else if (path.parentNode !== svg) {
+      svg.appendChild(path);
+    }
+
+    if (getComputedStyle(accordionItem).position === "static") {
+      accordionItem.style.position = "relative";
+    }
+
+    svg.style.position = "absolute";
+    svg.style.inset = "0";
+    svg.style.width = "100%";
+    svg.style.height = "100%";
+    svg.style.pointerEvents = "none";
+    svg.style.overflow = "visible";
+
+    return { svg, path };
+  }
+
+  function setupFaqItem(accordionItem) {
+    const toggle = accordionItem.querySelector(".w-dropdown-toggle, .dropdown-toggle");
+    const answer = accordionItem.querySelector(".answer, .w-dropdown-list");
+    if (!accordionItem || !toggle || !answer) return;
+
+    const bubble = ensureBubbleForItem(accordionItem);
+    const svg = bubble?.svg;
+    const path = bubble?.path;
+
+    if (!svg || !path) return;
+    if (accordionItem.dataset.faqBubbleInit === "1") return;
+    accordionItem.dataset.faqBubbleInit = "1";
 
     let currentOpen = null;
     let tl = null;
@@ -163,18 +205,14 @@ window.addEventListener("load", () => {
 
     function buildPathSet() {
       const itemRect = accordionItem.getBoundingClientRect();
-      const shellRect = shell.getBoundingClientRect();
       const toggleRect = toggle.getBoundingClientRect();
 
-      const w = Math.max(
-        80,
-        Math.round(Math.max(itemRect.width, shellRect.width, toggleRect.width))
-      );
+      const w = Math.max(80, Math.round(itemRect.width));
       const baseFrameH = Math.max(
         CONFIG.minFrameHeight,
         Math.round(toggleRect.height + CONFIG.frameHeightPad)
       );
-      const h = Math.max(baseFrameH, Math.round(shellRect.height));
+      const h = Math.max(baseFrameH, Math.round(itemRect.height));
       const maxBodyBottom = h - CONFIG.bottomInset - 1;
       const closedBodyBottom = Math.min(
         h - CONFIG.bottomInset - 1,
@@ -190,6 +228,8 @@ window.addEventListener("load", () => {
 
       svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
       svg.setAttribute("preserveAspectRatio", "none");
+      svg.setAttribute("width", `${w}`);
+      svg.setAttribute("height", `${h}`);
 
       return {
         closed: makeBubblePath(
@@ -305,7 +345,7 @@ window.addEventListener("load", () => {
         duration,
         morphSVG: {
           shape: targetShape,
-          shapeIndex: 0,
+          shapeIndex: "auto",
           type: "rotational",
           map: "position"
         },
@@ -326,8 +366,9 @@ window.addEventListener("load", () => {
       storePathSet(paths);
     }
 
-    function animateToState(isOpen) {
+    function animateToState(isOpen, fromOpen) {
       refreshPathDataOnly();
+      path.setAttribute("d", fromOpen ? path.dataset.open : path.dataset.closed);
 
       if (tl) tl.kill();
       isAnimating = true;
@@ -341,25 +382,28 @@ window.addEventListener("load", () => {
       });
 
       if (isOpen) {
-        tl.to(path, morphStep(path.dataset.open, 0.23, "power2.out"), 0)
+        tl.to(path, morphStep(path.dataset.glide1, 0.1, "sine.inOut"), 0)
+        .to(path, morphStep(path.dataset.glide2, 0.11, "sine.inOut"))
+        .to(path, morphStep(path.dataset.glide3, 0.12, "sine.inOut"))
+        .to(path, morphStep(path.dataset.open, 0.18, "power2.out"))
         .to(path, {
-          duration: 0.2,
+          duration: 0.22,
           fill: CONFIG.openFill,
           ease: "sine.out"
-        }, 0.02)
+        }, 0.08)
         .to(svg, {
-          duration: 0.23,
+          duration: 0.3,
           scaleX: 1.01,
           scaleY: 1.004,
           transformOrigin: "50% 50%",
           ease: "power2.out"
         }, 0)
         .to(svg, {
-          duration: 0.14,
+          duration: 0.18,
           scaleX: 1,
           scaleY: 1,
           ease: "sine.out"
-        }, 0.12);
+        }, 0.2);
       } else {
         tl.to(path, morphStep(path.dataset.glide3, 0.14, "sine.inOut"), 0)
         .to(svg, {
@@ -397,10 +441,11 @@ window.addEventListener("load", () => {
 
       if (isOpen === currentOpen) return;
 
+      const previousOpen = currentOpen;
       currentOpen = isOpen;
 
       if (animate) {
-        animateToState(isOpen);
+        animateToState(isOpen, previousOpen);
       } else {
         applyStatic(isOpen);
       }
@@ -412,13 +457,12 @@ window.addEventListener("load", () => {
     // keep path data matched to live size, but don't flatten active animation
     const ro = new ResizeObserver(() => {
       if (isAnimating) {
-        refreshPathDataOnly();
+        return;
       } else {
         applyStatic(getIsOpen());
       }
     });
 
-    ro.observe(shell);
     ro.observe(accordionItem);
     ro.observe(toggle);
     ro.observe(answer);
@@ -467,6 +511,14 @@ window.addEventListener("load", () => {
     });
   }
 
-  document.querySelectorAll(".faq-shell").forEach(setupFaqShell);
+  document.querySelectorAll(".faq-bubble-svg").forEach((svg) => {
+    if (!svg.closest(".accordion-item")) {
+      svg.style.display = "none";
+    }
+  });
+
+  document.querySelectorAll(".accordion-item").forEach((item) => {
+    setupFaqItem(item);
+  });
 });
 </script>
