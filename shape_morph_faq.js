@@ -111,9 +111,30 @@ window.addEventListener("load", () => {
     const centerX = clamp(w / 2 + tailOffsetX, left + r + 4, right - r - 4);
     const rawTailBaseLeft = centerX - (tailWidth * tailLeftRatio);
     const rawTailBaseRight = centerX + (tailWidth * tailRightRatio);
-    const tailBaseLeft = clamp(rawTailBaseLeft, left + r + 2, right - r - 8);
-    const tailBaseRight = clamp(rawTailBaseRight, left + r + 8, right - r - 2);
-    const tipX = centerX + tipNudgeX;
+    const tailBaseLeftMin = left + r + 2;
+    const tailBaseLeftMax = right - r - 8;
+    const tailBaseRightMin = left + r + 8;
+    const tailBaseRightMax = right - r - 2;
+    let tailBaseLeft = clamp(rawTailBaseLeft, tailBaseLeftMin, tailBaseLeftMax);
+    let tailBaseRight = clamp(rawTailBaseRight, tailBaseRightMin, tailBaseRightMax);
+
+    // Keep a valid base gap on narrow/small boxes to avoid side spikes at animation start.
+    const minBaseGap = Math.max(2, Math.min(8, tailWidth * 0.5));
+    if (tailBaseRight - tailBaseLeft < minBaseGap) {
+      const mid = clamp(
+        centerX,
+        tailBaseLeftMin + (minBaseGap / 2),
+        tailBaseRightMax - (minBaseGap / 2)
+      );
+      tailBaseLeft = clamp(mid - (minBaseGap / 2), tailBaseLeftMin, tailBaseLeftMax);
+      tailBaseRight = clamp(mid + (minBaseGap / 2), tailBaseRightMin, tailBaseRightMax);
+    }
+    if (tailBaseRight <= tailBaseLeft) {
+      tailBaseRight = Math.min(tailBaseRightMax, tailBaseLeft + minBaseGap);
+      tailBaseLeft = Math.max(tailBaseLeftMin, tailBaseRight - minBaseGap);
+    }
+
+    const tipX = clamp(centerX + tipNudgeX, left + r + 1, right - r - 1);
     const tipY = clamp(
       bodyBottom + tailHeight + tipNudgeY,
       bodyBottom + 2,
@@ -121,10 +142,19 @@ window.addEventListener("load", () => {
     );
 
     const ctrlShift = tailWidth * tailCurveSkew;
-    const outCtrlX = tailBaseRight - tailWidth * 0.28 + ctrlShift;
+    let outCtrlX = tailBaseRight - tailWidth * 0.28 + ctrlShift;
     const outCtrlY = bodyBottom + tailHeight * 0.44;
-    const inCtrlX = tailBaseLeft + tailWidth * 0.34 + ctrlShift;
+    let inCtrlX = tailBaseLeft + tailWidth * 0.34 + ctrlShift;
     const inCtrlY = bodyBottom + tailHeight * 0.72;
+    const ctrlMin = tailBaseLeft + 1;
+    const ctrlMax = tailBaseRight - 1;
+    outCtrlX = clamp(outCtrlX, ctrlMin, ctrlMax);
+    inCtrlX = clamp(inCtrlX, ctrlMin, ctrlMax);
+    if (inCtrlX > outCtrlX) {
+      const mid = (inCtrlX + outCtrlX) / 2;
+      inCtrlX = mid - 0.5;
+      outCtrlX = mid + 0.5;
+    }
 
     return `
       M ${left + r} ${top}
@@ -317,10 +347,10 @@ window.addEventListener("load", () => {
         absorb: makeBubblePath(
           w,
           h,
-          25,
-          6,
-          3,
-          20,
+          24,
+          2,
+          1,
+          220,
           0.5,
           0.5,
           0,
@@ -335,9 +365,9 @@ window.addEventListener("load", () => {
           w,
           h,
           32,
-          8,
-          4,
-          -220,
+          2,
+          1,
+          -250,
           0.52,
           0.48,
           -1,
@@ -399,8 +429,8 @@ window.addEventListener("load", () => {
         duration,
         morphSVG: {
           shape: targetShape,
-          shapeIndex: 0,
-          type: "rotational",
+          shapeIndex: "auto",
+          type: "linear",
           map: "position"
         },
         ease
@@ -436,55 +466,21 @@ window.addEventListener("load", () => {
       });
 
       if (isOpen) {
-        tl.to(path, morphStep(path.dataset.glide1, 0.14, "sine.inOut"), 0)
-        .to(path, morphStep(path.dataset.glide2, 0.14, "sine.inOut"))
-        .to(path, morphStep(path.dataset.absorb, 0.14, "sine.inOut"))
-        .to(path, morphStep(path.dataset.preOpen, 0.14, "sine.inOut"))
-        .to(path, morphStep(path.dataset.open, 0.2, "sine.out"))
-        .to(path, morphStep(path.dataset.overshoot, 0.06, "sine.out"))
-        .to(path, morphStep(path.dataset.open, 0.12, "sine.out"))
+        tl.to(path, morphStep(path.dataset.open, 0.42, "sine.inOut"), 0)
+        .to(path, morphStep(path.dataset.overshoot, 0.02, "sine.out"))
+        .to(path, morphStep(path.dataset.open, 0.06, "sine.out"))
         .to(path, {
           duration: 0.22,
           fill: CONFIG.openFill,
           ease: "sine.out"
-        }, 0.2)
-        .to(svg, {
-          duration: 0.28,
-          scaleX: 1.003,
-          scaleY: 1.001,
-          transformOrigin: "50% 50%",
-          ease: "sine.out"
-        }, 0)
-        .to(svg, {
-          duration: 0.16,
-          scaleX: 1,
-          scaleY: 1,
-          ease: "sine.out"
-        }, 0.2);
+        }, 0.16);
       } else {
-        tl.to(path, morphStep(path.dataset.preOpen, 0.12, "sine.inOut"), 0)
-        .to(svg, {
-          duration: 0.14,
-          scaleX: 1.001,
-          scaleY: 1.001,
-          transformOrigin: "50% 50%",
-          ease: "sine.inOut"
-        }, 0)
-        .to(path, morphStep(path.dataset.absorb, 0.14, "sine.inOut"))
-        .to(path, morphStep(path.dataset.glide2, 0.13, "sine.inOut"))
-        .to(path, morphStep(path.dataset.glide1, 0.13, "sine.inOut"))
-        .to(path, morphStep(path.dataset.closed, 0.22, "sine.out"))
+        tl.to(path, morphStep(path.dataset.closed, 0.34, "sine.inOut"), 0)
         .to(path, {
           duration: 0.2,
           fill: "transparent",
           ease: "sine.out"
-        }, 0)
-        .to(svg, {
-          duration: 0.22,
-          scaleX: 1,
-          scaleY: 1,
-          ease: "sine.out"
-        }, "<");
+        }, 0);
       }
     }
 
