@@ -1,6 +1,6 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.11.6";
-  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v1)`);
+  const SCRIPT_VERSION = "2026.03.11.7";
+  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v2-amplified)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn(`[nav_pill] v${SCRIPT_VERSION} missing GSAP or MorphSVGPlugin.`);
@@ -26,29 +26,29 @@ window.addEventListener("load", () => {
     bubbleRightInsetMin: 1.5,
     bubbleRightInsetMax: 4,
     // temporary S-curve bridge stage used during morph
-    liquidStageTailDepthRatio: 0.66,
-    liquidStageRightInsetBoost: 1.4,
-    liquidStageTailTipOffsetAdjust: -2,
-    liquidWaveRatio: 0.78,
-    liquidWaveMin: 3,
-    liquidWaveMax: 9,
-    liquidWaveOutFactor: 0.72,
-    liquidWaveInFactor: 1.15,
+    liquidStageTailDepthRatio: 0.74,
+    liquidStageRightInsetBoost: 0.5,
+    liquidStageTailTipOffsetAdjust: -3,
+    liquidWaveRatio: 1.25,
+    liquidWaveMin: 7,
+    liquidWaveMax: 18,
+    liquidWaveOutFactor: 1.15,
+    liquidWaveInFactor: 1.65,
     // quick concave brake stage just before settle
-    concaveStageTailDepthRatio: 0.9,
-    concaveStageRightInsetBoost: 1.9,
-    concaveStageTailTipOffsetAdjust: -1,
-    concaveWaveRatio: 0.52,
-    concaveWaveMin: 2,
-    concaveWaveMax: 7,
-    concaveWaveInFactor1: 0.58,
-    concaveWaveInFactor2: 1.38,
-    liquidStageDurationEnter: 0.17,
-    concaveStageDurationEnter: 0.1,
-    finalStageDurationEnter: 0.21,
-    concaveStageDurationExit: 0.1,
-    liquidStageDurationExit: 0.15,
-    finalStageDurationExit: 0.24,
+    concaveStageTailDepthRatio: 0.96,
+    concaveStageRightInsetBoost: 0.9,
+    concaveStageTailTipOffsetAdjust: -4,
+    concaveWaveRatio: 0.9,
+    concaveWaveMin: 5,
+    concaveWaveMax: 14,
+    concaveWaveInFactor1: 1.0,
+    concaveWaveInFactor2: 2.2,
+    liquidStageDurationEnter: 0.2,
+    concaveStageDurationEnter: 0.14,
+    finalStageDurationEnter: 0.24,
+    concaveStageDurationExit: 0.14,
+    liquidStageDurationExit: 0.18,
+    finalStageDurationExit: 0.27,
     hoverScale: 1.04,
 
     // visual spacing around the body shape

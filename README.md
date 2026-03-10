@@ -45,7 +45,7 @@ Notes:
 
 **Setup notes**
 - The script waits for `window.load`.
-- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v1)``.
+- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v2-amplified)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
 - The SVG `viewBox` includes extra height for tail depth during morph.
 - Corner rounding is controlled by:
@@ -72,11 +72,133 @@ Notes:
   - `liquidStageDurationEnter`, `concaveStageDurationEnter`, `finalStageDurationEnter`
   - `concaveStageDurationExit`, `liquidStageDurationExit`, `finalStageDurationExit`
 - Hover/leave use direct string morph targets (`morphSVG: pathData`) in a staged timeline (`pill -> liquid -> concave -> bubble` and reverse).
-- Current defaults intentionally exaggerate the mid-transition wave so the S/concave motion is visible before final settle.
+- Current defaults strongly exaggerate the mid-transition wave/concave stages for visual tuning, so you can dial values back after confirming the motion profile.
 
 **Assumptions**
 - `.nav-pill` integration CSS positions/overlays the SVG behind label content (for example using relative/absolute stacking and `pointer-events` handling).
 - `.nav-pill` elements are hoverable desktop targets; touch-only interactions are not handled by this script.
+
+---
+
+### `dynamic_nav.js`
+
+**Purpose**
+- Switches nav theme between light/dark based on which themed section is currently under the nav line in the viewport.
+- Adds nav state hooks so your pill styles can swap stroke/text/fill colors without duplicating nav components.
+- Optionally marks the matching nav link as active for section-based fill states.
+
+**Dependencies**
+- No third-party libraries required.
+- Browser APIs used: `requestAnimationFrame`.
+- Browser API used when available: `ResizeObserver` (for nav/section size-change updates).
+
+**Required Webflow classes/selectors**
+- Required by script logic:
+  - Themed sections: `[data-nav-theme]` with value `dark` or `light` (also accepts `black`/`white` aliases).
+  - Nav root (recommended): `[data-dynamic-nav]`.
+- Fallback nav discovery (if `[data-dynamic-nav]` is missing):
+  - First `.w-nav`, otherwise first `<nav>`.
+- Optional active-link mapping:
+  - Section key: `data-nav-section="some-key"` or `id="some-key"` on the section.
+  - Nav link target: `data-nav-target="some-key"` or `href="#some-key"` on links inside nav.
+
+**Expected HTML structure**
+```html
+<nav class="w-nav" data-dynamic-nav data-nav-probe-offset="2">
+  <a class="nav-pill" href="#about">
+    <svg class="pill-bg" aria-hidden="true" focusable="false">
+      <path class="pill-path"></path>
+    </svg>
+    <span class="pill-label">About</span>
+  </a>
+  <a class="nav-pill" data-nav-target="work">
+    <svg class="pill-bg" aria-hidden="true" focusable="false">
+      <path class="pill-path"></path>
+    </svg>
+    <span class="pill-label">Work</span>
+  </a>
+</nav>
+
+<section id="about" data-nav-theme="light"></section>
+<section id="work" data-nav-theme="dark"></section>
+```
+
+Notes:
+- `data-nav-probe-offset` is optional and numeric; it adjusts the sample line below the nav bottom edge.
+- If no section key (`id`/`data-nav-section`) exists, theme switching still works, but active-link mapping is skipped.
+
+**Where it should be loaded**
+- Load on pages that contain the nav + themed sections.
+- Best location: page/footer custom code so nav/sections exist before initialization.
+- If used with `nav_pill.js`, load both scripts in footer after markup; either order is fine because they target different responsibilities.
+
+**Setup notes**
+- The script waits for `window.load`.
+- On load it logs ``[dynamic_nav] v<version> loaded``.
+- Runtime state hooks it writes:
+  - On nav element:
+    - `data-nav-theme="dark|light"`
+    - `data-nav-section-active="<section-key>"`
+    - class `is-nav-theme-dark` or `is-nav-theme-light`
+  - On `<html>`:
+    - `data-nav-theme="dark|light"`
+  - On matched nav link:
+    - class `is-nav-section-active`
+    - `aria-current="true"`
+- Add this CSS in Webflow Project/Page `<head>` to swap black/white outlines/text and allow future fill states:
+```html
+<style>
+  [data-dynamic-nav] .pill-path{
+    fill: var(--pill-fill, transparent);
+    stroke: var(--pill-stroke, #000);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    transition: stroke .25s ease, fill .25s ease;
+  }
+
+  [data-dynamic-nav] .pill-label{
+    position: relative;
+    z-index: 1;
+    padding: 0 40px;
+    color: var(--pill-text, #000);
+    font-size: 18px;
+    line-height: 14px;
+    transition: color .25s ease;
+  }
+
+  [data-dynamic-nav].is-nav-theme-light{
+    --pill-stroke: #000;
+    --pill-text: #000;
+    --pill-fill: transparent;
+    --pill-active-fill: rgba(0, 0, 0, 0.08);
+  }
+
+  [data-dynamic-nav].is-nav-theme-dark{
+    --pill-stroke: #fff;
+    --pill-text: #fff;
+    --pill-fill: transparent;
+    --pill-active-fill: rgba(255, 255, 255, 0.2);
+  }
+
+  [data-dynamic-nav] .nav-pill.is-nav-section-active .pill-path{
+    fill: var(--pill-active-fill);
+  }
+
+  [data-dynamic-nav] .nav-pill:hover .pill-path{
+    fill: var(--pill-active-fill);
+  }
+</style>
+```
+- Migration note from static color CSS:
+  - Replace hard-coded `.pill-path` stroke and `.pill-label` color values with CSS variables as above.
+  - Keep one nav component; section attributes now drive the theme.
+
+**Assumptions**
+- Assumption: The nav is fixed or sticky near the top; the script samples a line at nav bottom + offset to decide theme.
+- Assumption: Themed sections represent non-overlapping vertical regions in scroll order for predictable switching.
+- Assumption: If `[data-dynamic-nav]` is not set, the first `.w-nav`/`nav` in DOM is the intended target.
 
 ---
 
