@@ -217,6 +217,7 @@ window.addEventListener("load", () => {
     function buildPathSet() {
       const itemRect = accordionItem.getBoundingClientRect();
       const toggleRect = toggle.getBoundingClientRect();
+      const lerp = (a, b, t) => a + ((b - a) * t);
 
       const w = Math.max(80, Math.round(itemRect.width));
       const baseFrameH = Math.round(toggleRect.height + CONFIG.frameHeightPad);
@@ -237,6 +238,18 @@ window.addEventListener("load", () => {
       const bodyAt = (t) => Math.round(
         closedBodyBottom + ((openBodyBottom - closedBodyBottom) * t)
       );
+      const absorbT = 0.56;
+      const absorbedRadius = Math.round(lerp(CONFIG.closed.radius, CONFIG.open.radius, 0.42));
+      const absorbedTailWidth = Math.max(
+        6,
+        Math.round(lerp(CONFIG.closed.tailWidth, CONFIG.open.tailWidth, 0.24) * 0.2)
+      );
+      const absorbedTailOffsetX = Math.round(
+        lerp(CONFIG.closed.tailOffsetX, CONFIG.open.tailOffsetX, absorbT)
+      );
+      const absorbedTipNudgeX = Math.round(
+        lerp(CONFIG.closed.tipNudgeX, CONFIG.open.tipNudgeX, absorbT)
+      );
 
       svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
       svg.setAttribute("preserveAspectRatio", "none");
@@ -256,6 +269,22 @@ window.addEventListener("load", () => {
           CONFIG.closed.tipNudgeY,
           CONFIG.closed.tailCurveSkew,
           bodyAt(0),
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
+        ),
+        absorbed: makeBubblePath(
+          w, h,
+          absorbedRadius,
+          absorbedTailWidth,
+          0.7,
+          absorbedTailOffsetX,
+          0.5,
+          0.5,
+          absorbedTipNudgeX,
+          0,
+          0,
+          bodyAt(absorbT),
           CONFIG.topInset,
           CONFIG.sideInset,
           CONFIG.bottomInset
@@ -281,6 +310,7 @@ window.addEventListener("load", () => {
 
     function storePathSet(paths) {
       path.dataset.closed = paths.closed;
+      path.dataset.absorbed = paths.absorbed;
       path.dataset.open = paths.open;
     }
 
@@ -326,14 +356,16 @@ window.addEventListener("load", () => {
       });
 
       if (isOpen) {
-        tl.to(path, morphStep(path.dataset.open, 0.44, "sine.inOut"), 0)
+        tl.to(path, morphStep(path.dataset.absorbed, 0.22, "sine.inOut"), 0)
+        .to(path, morphStep(path.dataset.open, 0.22, "sine.inOut"), 0.22)
         .to(path, {
           duration: 0.22,
           fill: CONFIG.openFill,
           ease: "sine.out"
         }, 0.18);
       } else {
-        tl.to(path, morphStep(path.dataset.closed, 0.36, "sine.inOut"), 0)
+        tl.to(path, morphStep(path.dataset.absorbed, 0.18, "sine.inOut"), 0)
+        .to(path, morphStep(path.dataset.closed, 0.18, "sine.inOut"), 0.18)
         .to(path, {
           duration: 0.2,
           fill: "transparent",

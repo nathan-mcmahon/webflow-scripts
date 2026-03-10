@@ -9,6 +9,7 @@ This repository contains standalone JavaScript snippets intended for use in Webf
 **Purpose**
 - Adds an animated SVG "speech bubble" background to FAQ accordion items.
 - Morphs the bubble shape and fill color when an item opens/closes.
+- Transition now includes a midpoint where the tail is briefly absorbed into the bottom edge before re-emerging.
 - Tracks Webflow dropdown state and size changes so the bubble stays aligned.
 
 **Dependencies**
@@ -62,6 +63,7 @@ Notes:
 - Visual tuning values are in the top-level `CONFIG` object:
   - bubble radii, tail geometry, insets, min heights, open fill color.
 - It applies inline positioning/z-index styles to keep bubble behind content.
+- Open/close timing remains unchanged (`0.44s` open, `0.36s` close), but morphing now runs in two steps via an internal `absorbed` path.
 - Add this CSS in the page/project `<head>` for wrapper layout and stroke styling:
 ```html
 <style>
