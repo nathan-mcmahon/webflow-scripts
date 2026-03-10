@@ -45,7 +45,7 @@ Notes:
 
 **Setup notes**
 - The script waits for `window.load`.
-- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded``.
+- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: string-liquid-scurve)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
 - The SVG `viewBox` includes extra height for tail depth during morph.
 - Corner rounding is controlled by:
@@ -65,6 +65,7 @@ Notes:
   - `liquidSideWave`
   - `bubbleSideWave`
 - Hover/leave use two-step GSAP timelines (`pill -> liquid -> bubble` and reverse) for a smoother S-curve style morph.
+- Morph targets are passed as direct path strings (`morphSVG: pathData`) for broader MorphSVG runtime compatibility in Webflow embeds.
 
 **Assumptions**
 - `.nav-pill` integration CSS positions/overlays the SVG behind label content (for example using relative/absolute stacking and `pointer-events` handling).

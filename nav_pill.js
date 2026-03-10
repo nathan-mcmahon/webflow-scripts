@@ -1,6 +1,6 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.10.2";
-  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded`);
+  const SCRIPT_VERSION = "2026.03.11.1";
+  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: string-liquid-scurve)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn(`[nav_pill] v${SCRIPT_VERSION} missing GSAP or MorphSVGPlugin.`);
@@ -18,14 +18,14 @@ window.addEventListener("load", () => {
     tailHeight: 30,
     tailOffsetX: 18,
     // how much the resting tail points are pulled toward center (0-1)
-    liquidMorphBasePull: 0.32,
-    liquidMorphTipPull: 0.5,
+    liquidMorphBasePull: 0.88,
+    liquidMorphTipPull: 0.95,
     // intermediate liquid state between rest and full bubble
-    liquidMorphTailMix: 0.7,
-    liquidMorphTailDepth: 0.58,
-    liquidSideWave: 8,
+    liquidMorphTailMix: 0.76,
+    liquidMorphTailDepth: 0.72,
+    liquidSideWave: 7,
     pillSideWave: 0,
-    bubbleSideWave: 0.8,
+    bubbleSideWave: 1.2,
     hoverScale: 1.04,
 
     // visual spacing around the body shape
@@ -129,7 +129,7 @@ window.addEventListener("load", () => {
     restTipX = clamp(restTipX, minBaseX, maxBaseX);
 
     const availableBaseWidth = Math.max(0, maxBaseX - minBaseX);
-    const minTailSpan = Math.min(6, availableBaseWidth);
+    const minTailSpan = Math.min(1.25, availableBaseWidth);
 
     if ((restTailBaseRight - restTailBaseLeft) < minTailSpan) {
       const halfSpan = minTailSpan / 2;
@@ -316,18 +316,13 @@ window.addEventListener("load", () => {
       morphTl
         .to(path, {
           duration: 0.2,
-          morphSVG: {
-            shape: path.dataset.liquid,
-            shapeIndex: 0
-          },
+          // Keep direct-string syntax for compatibility with older MorphSVG builds.
+          morphSVG: path.dataset.liquid,
           ease: "sine.inOut"
         })
         .to(path, {
           duration: 0.28,
-          morphSVG: {
-            shape: path.dataset.bubble,
-            shapeIndex: 0
-          },
+          morphSVG: path.dataset.bubble,
           ease: "power2.out"
         });
 
@@ -344,18 +339,12 @@ window.addEventListener("load", () => {
       morphTl
         .to(path, {
           duration: 0.17,
-          morphSVG: {
-            shape: path.dataset.liquid,
-            shapeIndex: 0
-          },
+          morphSVG: path.dataset.liquid,
           ease: "sine.inOut"
         })
         .to(path, {
           duration: 0.26,
-          morphSVG: {
-            shape: path.dataset.pill,
-            shapeIndex: 0
-          },
+          morphSVG: path.dataset.pill,
           ease: "power2.out"
         });
 
