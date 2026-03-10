@@ -1,6 +1,6 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.11.8";
-  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v3-visible-span)`);
+  const SCRIPT_VERSION = "2026.03.11.9";
+  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v3-slow-debug)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn(`[nav_pill] v${SCRIPT_VERSION} missing GSAP or MorphSVGPlugin.`);
@@ -53,6 +53,8 @@ window.addEventListener("load", () => {
     concaveStageDurationExit: 0.14,
     liquidStageDurationExit: 0.18,
     finalStageDurationExit: 0.27,
+    // test knob to inspect path behavior in slow motion (1 = normal speed)
+    morphSlowMotionFactor: 2.8,
     hoverScale: 1.04,
 
     // visual spacing around the body shape
@@ -66,6 +68,10 @@ window.addEventListener("load", () => {
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
+  }
+
+  function morphDuration(baseSeconds, slowFactor) {
+    return baseSeconds * slowFactor;
   }
 
   function makePillPath(w, bodyH, r, topInset, sideInset) {
@@ -436,19 +442,19 @@ window.addEventListener("load", () => {
       morphTl = gsap.timeline();
       morphTl
         .to(path, {
-          duration: CONFIG.liquidStageDurationEnter,
+          duration: morphDuration(CONFIG.liquidStageDurationEnter, CONFIG.morphSlowMotionFactor),
           morphSVG: path.dataset.liquid,
           ease: "sine.inOut",
           overwrite: true
         })
         .to(path, {
-          duration: CONFIG.concaveStageDurationEnter,
+          duration: morphDuration(CONFIG.concaveStageDurationEnter, CONFIG.morphSlowMotionFactor),
           morphSVG: path.dataset.concave,
           ease: "sine.inOut",
           overwrite: true
         })
         .to(path, {
-          duration: CONFIG.finalStageDurationEnter,
+          duration: morphDuration(CONFIG.finalStageDurationEnter, CONFIG.morphSlowMotionFactor),
           morphSVG: path.dataset.bubble,
           ease: "sine.out",
           overwrite: true
@@ -467,19 +473,19 @@ window.addEventListener("load", () => {
       morphTl = gsap.timeline();
       morphTl
         .to(path, {
-          duration: CONFIG.concaveStageDurationExit,
+          duration: morphDuration(CONFIG.concaveStageDurationExit, CONFIG.morphSlowMotionFactor),
           morphSVG: path.dataset.concave,
           ease: "sine.inOut",
           overwrite: true
         })
         .to(path, {
-          duration: CONFIG.liquidStageDurationExit,
+          duration: morphDuration(CONFIG.liquidStageDurationExit, CONFIG.morphSlowMotionFactor),
           morphSVG: path.dataset.liquid,
           ease: "sine.inOut",
           overwrite: true
         })
         .to(path, {
-          duration: CONFIG.finalStageDurationExit,
+          duration: morphDuration(CONFIG.finalStageDurationExit, CONFIG.morphSlowMotionFactor),
           morphSVG: path.dataset.pill,
           ease: "sine.out",
           overwrite: true
