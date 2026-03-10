@@ -3,7 +3,7 @@ window.addEventListener("load", () => {
   // Guard against duplicate embed/script instances on the same page.
   if (window.__faqBubbleMorphInit) return;
   window.__faqBubbleMorphInit = true;
-  const SCRIPT_VERSION = "1.0.5";
+  const SCRIPT_VERSION = "1.0.6";
   console.info(`[shape_morph_faq] v${SCRIPT_VERSION} loaded`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
@@ -38,8 +38,8 @@ window.addEventListener("load", () => {
     },
     openTailOvershoot: {
       popDuration: 0.12,
-      extraTailHeight: 6,
-      extraTipNudgeY: 2,
+      extraTailHeight: 8,
+      extraTipNudgeY: 3,
       extendDuration: 0.08,
       settleDuration: 0.16
     },

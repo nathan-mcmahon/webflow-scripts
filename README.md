@@ -74,6 +74,7 @@ Notes:
   - wait until observed item height is stable (about `120ms` stable window, capped at `900ms`)
   - tail pop-out at final height (`0.12s`)
   - subtle tail overshoot (`0.08s`) and settle (`0.16s`)
+- Current tuning uses a slightly stronger open-tail overshoot amplitude than previous revisions.
 - Close timing remains unchanged (`0.36s` total).
 - During active morph, resize updates still refresh geometry data so the top edge stays stable and does not snap upward at completion.
 - Add this CSS in the page/project `<head>` for wrapper layout and stroke styling:
