@@ -45,27 +45,18 @@ Notes:
 
 **Setup notes**
 - The script waits for `window.load`.
-- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: string-liquid-scurve)``.
+- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: classic-softened-bulge)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
 - The SVG `viewBox` includes extra height for tail depth during morph.
 - Corner rounding is controlled by:
   - `radiusRatio` (`0.5` = fully pill-shaped ends, based on body height)
   - `minRadius` (keeps small pills from looking too square)
 - Radius is clamped to safe geometry bounds before path generation.
-- Tail base anchors are clamped inside the bottom straight segment between rounded corners.
-- The rest-state pill path keeps a collapsed tail segment so it shares segment topology with the bubble path, reducing right-edge bulge artifacts during morph.
-- Rest-state tail points are pulled partway toward center using:
-  - `liquidMorphBasePull` (base-anchor pull)
-  - `liquidMorphTipPull` (tip x-position pull)
-- The script builds an intermediate liquid path (`data-liquid`) using:
-  - `liquidMorphTailMix` (how close intermediate geometry is to full bubble)
-  - `liquidMorphTailDepth` (intermediate tail depth as a fraction of full tail height)
-- Right edge curvature is controlled per state with:
-  - `pillSideWave`
-  - `liquidSideWave`
-  - `bubbleSideWave`
-- Hover/leave use two-step GSAP timelines (`pill -> liquid -> bubble` and reverse) for a smoother S-curve style morph.
-- Morph targets are passed as direct path strings (`morphSVG: pathData`) for broader MorphSVG runtime compatibility in Webflow embeds.
+- Bubble-tail softening is controlled by:
+  - `rightCornerGuard` (keeps right-side tail geometry away from the corner arc)
+  - `tailTipOffsetX` (how far the tip leads horizontally)
+  - `minTailSpan` (minimum base width so the tail keeps a liquid pull)
+- Hover/leave use direct string morph targets (`morphSVG: pathData`) with single-stage tweens and `sine.inOut` easing for a smoother fluid resize.
 
 **Assumptions**
 - `.nav-pill` integration CSS positions/overlays the SVG behind label content (for example using relative/absolute stacking and `pointer-events` handling).
