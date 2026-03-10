@@ -1,4 +1,4 @@
-<script>
+
 window.addEventListener("load", () => {
   // Guard against duplicate embed/script instances on the same page.
   if (window.__faqBubbleMorphInit) return;
@@ -465,4 +465,4 @@ window.addEventListener("load", () => {
     setupFaqItem(item);
   });
 });
-</script>
+
