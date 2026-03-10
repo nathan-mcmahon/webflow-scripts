@@ -53,6 +53,10 @@ Notes:
 - Radius is clamped to safe geometry bounds before path generation.
 - Tail base anchors are clamped inside the bottom straight segment between rounded corners.
 - The rest-state pill path keeps a collapsed tail segment so it shares segment topology with the bubble path, reducing right-edge bulge artifacts during morph.
+- Rest-state tail points are pulled partway toward center using:
+  - `liquidMorphBasePull` (base-anchor pull)
+  - `liquidMorphTipPull` (tip x-position pull)
+- Bubble state uses the full tail geometry, so morphing regains some liquid lateral motion while remaining clamped to safe bounds.
 - Hover/leave animations are GSAP tweens that morph between cached path strings (`data-pill` and `data-bubble`).
 
 **Assumptions**

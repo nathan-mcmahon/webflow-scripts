@@ -14,6 +14,9 @@ window.addEventListener("load", () => {
     tailWidth: 25,
     tailHeight: 30,
     tailOffsetX: 18,
+    // how much the resting tail points are pulled toward center (0-1)
+    liquidMorphBasePull: 0.32,
+    liquidMorphTipPull: 0.5,
     hoverScale: 1.04,
 
     // visual spacing around the body shape
@@ -25,6 +28,10 @@ window.addEventListener("load", () => {
     tailCenterCompensation: 0.3
   };
 
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
   function getTailGeometry(w, r, tailWidth, tailOffsetX, sideInset) {
     const left = sideInset;
     const right = w - sideInset;
@@ -35,8 +42,8 @@ window.addEventListener("load", () => {
     const maxBaseX = right - r;
     const availableBaseWidth = Math.max(0, maxBaseX - minBaseX);
 
-    let tailBaseLeft = Math.min(maxBaseX, Math.max(minBaseX, rawTailBaseLeft));
-    let tailBaseRight = Math.min(maxBaseX, Math.max(minBaseX, rawTailBaseRight));
+    let tailBaseLeft = clamp(rawTailBaseLeft, minBaseX, maxBaseX);
+    let tailBaseRight = clamp(rawTailBaseRight, minBaseX, maxBaseX);
 
     if (availableBaseWidth === 0) {
       tailBaseLeft = minBaseX;
@@ -53,12 +60,54 @@ window.addEventListener("load", () => {
       }
     }
 
-    const tipX = Math.min(maxBaseX, Math.max(minBaseX, centerX + 20));
+    const tipX = clamp(centerX + 20, minBaseX, maxBaseX);
 
     return {
       tailBaseLeft,
       tailBaseRight,
-      tipX
+      tipX,
+      centerX: clamp(centerX, minBaseX, maxBaseX),
+      minBaseX,
+      maxBaseX
+    };
+  }
+
+  function getRestTailGeometry(tailGeometry, basePull, tipPull) {
+    const safeBasePull = clamp(basePull, 0, 1);
+    const safeTipPull = clamp(tipPull, 0, 1);
+    const {
+      tailBaseLeft,
+      tailBaseRight,
+      tipX,
+      centerX,
+      minBaseX,
+      maxBaseX
+    } = tailGeometry;
+
+    let restTailBaseLeft =
+      tailBaseLeft + ((centerX - tailBaseLeft) * safeBasePull);
+    let restTailBaseRight =
+      tailBaseRight + ((centerX - tailBaseRight) * safeBasePull);
+    let restTipX = tipX + ((centerX - tipX) * safeTipPull);
+
+    restTailBaseLeft = clamp(restTailBaseLeft, minBaseX, maxBaseX);
+    restTailBaseRight = clamp(restTailBaseRight, minBaseX, maxBaseX);
+    restTipX = clamp(restTipX, minBaseX, maxBaseX);
+
+    const availableBaseWidth = Math.max(0, maxBaseX - minBaseX);
+    const minTailSpan = Math.min(6, availableBaseWidth);
+
+    if ((restTailBaseRight - restTailBaseLeft) < minTailSpan) {
+      const halfSpan = minTailSpan / 2;
+      const clampedCenter = clamp(centerX, minBaseX + halfSpan, maxBaseX - halfSpan);
+      restTailBaseLeft = clampedCenter - halfSpan;
+      restTailBaseRight = clampedCenter + halfSpan;
+    }
+
+    return {
+      tailBaseLeft: restTailBaseLeft,
+      tailBaseRight: restTailBaseRight,
+      tipX: restTipX
     };
   }
 
@@ -147,12 +196,17 @@ window.addEventListener("load", () => {
         maxRadius,
         Math.max(CONFIG.minRadius, bodyH * CONFIG.radiusRatio)
       );
-      const tailGeometry = getTailGeometry(
+      const bubbleTailGeometry = getTailGeometry(
         w,
         radius,
         CONFIG.tailWidth,
         CONFIG.tailOffsetX,
         CONFIG.sideInset
+      );
+      const pillTailGeometry = getRestTailGeometry(
+        bubbleTailGeometry,
+        CONFIG.liquidMorphBasePull,
+        CONFIG.liquidMorphTipPull
       );
 
       svg.setAttribute("viewBox", `0 0 ${w} ${svgH}`);
@@ -163,7 +217,7 @@ window.addEventListener("load", () => {
         radius,
         adjustedTopInset,
         CONFIG.sideInset,
-        tailGeometry
+        pillTailGeometry
       );
 
       const bubbleD = makeBubblePath(
@@ -173,7 +227,7 @@ window.addEventListener("load", () => {
         CONFIG.tailHeight,
         adjustedTopInset,
         CONFIG.sideInset,
-        tailGeometry
+        bubbleTailGeometry
       );
 
       path.setAttribute("d", pillD);
