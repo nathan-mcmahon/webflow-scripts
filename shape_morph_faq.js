@@ -250,6 +250,11 @@ window.addEventListener("load", () => {
       const absorbedTipNudgeX = Math.round(
         lerp(CONFIG.closed.tipNudgeX, CONFIG.open.tipNudgeX, absorbT)
       );
+      const openOvershootTailWidth = Math.round(CONFIG.open.tailWidth * 1.08);
+      const openOvershootTailHeight = CONFIG.open.tailHeight + 6;
+      const openOvershootTailOffsetX = CONFIG.open.tailOffsetX - 18;
+      const openOvershootTipNudgeX = CONFIG.open.tipNudgeX - 5;
+      const openOvershootTipNudgeY = CONFIG.open.tipNudgeY + 3;
 
       svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
       svg.setAttribute("preserveAspectRatio", "none");
@@ -289,6 +294,22 @@ window.addEventListener("load", () => {
           CONFIG.sideInset,
           CONFIG.bottomInset
         ),
+        openOvershoot: makeBubblePath(
+          w, h,
+          CONFIG.open.radius,
+          openOvershootTailWidth,
+          openOvershootTailHeight,
+          openOvershootTailOffsetX,
+          CONFIG.open.tailLeftRatio,
+          CONFIG.open.tailRightRatio,
+          openOvershootTipNudgeX,
+          openOvershootTipNudgeY,
+          CONFIG.open.tailCurveSkew * 1.08,
+          bodyAt(1),
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
+        ),
         open: makeBubblePath(
           w, h,
           CONFIG.open.radius,
@@ -311,6 +332,7 @@ window.addEventListener("load", () => {
     function storePathSet(paths) {
       path.dataset.closed = paths.closed;
       path.dataset.absorbed = paths.absorbed;
+      path.dataset.openOvershoot = paths.openOvershoot;
       path.dataset.open = paths.open;
     }
 
@@ -357,7 +379,8 @@ window.addEventListener("load", () => {
 
       if (isOpen) {
         tl.to(path, morphStep(path.dataset.absorbed, 0.22, "sine.inOut"), 0)
-        .to(path, morphStep(path.dataset.open, 0.22, "sine.inOut"), 0.22)
+        .to(path, morphStep(path.dataset.openOvershoot, 0.12, "sine.out"), 0.22)
+        .to(path, morphStep(path.dataset.open, 0.1, "sine.in"), 0.34)
         .to(path, {
           duration: 0.22,
           fill: CONFIG.openFill,
