@@ -9,8 +9,8 @@ This repository contains standalone JavaScript snippets intended for use in Webf
 **Purpose**
 - Adds an animated SVG "speech bubble" background to FAQ accordion items.
 - Morphs the bubble shape and fill color when an item opens/closes.
-- Transition now includes a midpoint where the tail is briefly absorbed into the bottom edge before re-emerging.
-- On open, once the bubble reaches full size, the tail briefly dips deeper and settles back to the final open shape.
+- Transition includes an absorbed midpoint where the original tail smoothly merges into the bottom edge.
+- During open, the bubble first resizes to full height with the tail absorbed, then the open tail pops out, slightly overshoots, and settles.
 - Tracks Webflow dropdown state and size changes so the bubble stays aligned.
 
 **Dependencies**
@@ -63,9 +63,12 @@ Notes:
 - It guards duplicate initialization with `window.__faqBubbleMorphInit`.
 - Visual tuning values are in the top-level `CONFIG` object:
   - bubble radii, tail geometry, insets, min heights, open fill color.
-  - open-only end overshoot controls under `openTailOvershoot`.
+  - open-only tail pop/overshoot controls under `openTailOvershoot`.
 - It applies inline positioning/z-index styles to keep bubble behind content.
-- Opening morph reaches full-size in `0.44s`, then runs a tail-only overshoot and settle (`0.12s` + `0.16s`).
+- Opening sequence is staged as:
+  - resize to full height with tail absorbed (`0.44s`)
+  - tail pop-out at final height (`0.12s`)
+  - subtle tail overshoot (`0.08s`) and settle (`0.16s`)
 - Close timing remains unchanged (`0.36s` total).
 - During active morph, resize updates still refresh geometry data so the top edge stays stable and does not snap upward at completion.
 - Add this CSS in the page/project `<head>` for wrapper layout and stroke styling:

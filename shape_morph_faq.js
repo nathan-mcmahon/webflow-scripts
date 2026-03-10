@@ -35,9 +35,10 @@ window.addEventListener("load", () => {
       tailCurveSkew: -0.26
     },
     openTailOvershoot: {
-      extraTailHeight: 9,
-      extraTipNudgeY: 4,
-      extendDuration: 0.12,
+      popDuration: 0.12,
+      extraTailHeight: 6,
+      extraTipNudgeY: 2,
+      extendDuration: 0.08,
       settleDuration: 0.16
     },
     minFrameHeight: 90,
@@ -245,6 +246,7 @@ window.addEventListener("load", () => {
         closedBodyBottom + ((openBodyBottom - closedBodyBottom) * t)
       );
       const absorbT = 0.56;
+      const openAbsorbT = 0.9;
       const absorbedRadius = Math.round(lerp(CONFIG.closed.radius, CONFIG.open.radius, 0.42));
       const absorbedTailWidth = Math.max(
         6,
@@ -255,6 +257,15 @@ window.addEventListener("load", () => {
       );
       const absorbedTipNudgeX = Math.round(
         lerp(CONFIG.closed.tipNudgeX, CONFIG.open.tipNudgeX, absorbT)
+      );
+      const absorbedOpenRadius = Math.round(
+        lerp(CONFIG.closed.radius, CONFIG.open.radius, 0.78)
+      );
+      const absorbedOpenTailOffsetX = Math.round(
+        lerp(CONFIG.closed.tailOffsetX, CONFIG.open.tailOffsetX, openAbsorbT)
+      );
+      const absorbedOpenTipNudgeX = Math.round(
+        lerp(CONFIG.closed.tipNudgeX, CONFIG.open.tipNudgeX, openAbsorbT)
       );
 
       svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
@@ -291,6 +302,22 @@ window.addEventListener("load", () => {
           0,
           0,
           bodyAt(absorbT),
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
+        ),
+        absorbedOpen: makeBubblePath(
+          w, h,
+          absorbedOpenRadius,
+          absorbedTailWidth,
+          0.7,
+          absorbedOpenTailOffsetX,
+          0.5,
+          0.5,
+          absorbedOpenTipNudgeX,
+          0,
+          0,
+          bodyAt(1),
           CONFIG.topInset,
           CONFIG.sideInset,
           CONFIG.bottomInset
@@ -333,6 +360,7 @@ window.addEventListener("load", () => {
     function storePathSet(paths) {
       path.dataset.closed = paths.closed;
       path.dataset.absorbed = paths.absorbed;
+      path.dataset.absorbedOpen = paths.absorbedOpen;
       path.dataset.open = paths.open;
       path.dataset.openOvershoot = paths.openOvershoot;
     }
@@ -379,12 +407,17 @@ window.addEventListener("load", () => {
       });
 
       if (isOpen) {
-        const openMorphDuration = 0.22;
-        const tailOvershootStart = openMorphDuration * 2;
+        const openResizeDuration = 0.44;
+        const tailPopStart = openResizeDuration;
+        const tailOvershootStart = tailPopStart + CONFIG.openTailOvershoot.popDuration;
         const tailSettleStart = tailOvershootStart + CONFIG.openTailOvershoot.extendDuration;
 
-        tl.to(path, morphStep(path.dataset.absorbed, 0.22, "sine.inOut"), 0)
-        .to(path, morphStep(path.dataset.open, openMorphDuration, "sine.inOut"), openMorphDuration)
+        tl.to(path, morphStep(path.dataset.absorbedOpen, openResizeDuration, "sine.inOut"), 0)
+        .to(
+          path,
+          morphStep(path.dataset.open, CONFIG.openTailOvershoot.popDuration, "sine.out"),
+          tailPopStart
+        )
         .to(
           path,
           morphStep(
