@@ -45,7 +45,7 @@ Notes:
 
 **Setup notes**
 - The script waits for `window.load`.
-- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: classic-softened-bulge)``.
+- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: classic-subtle-ripple)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
 - The SVG `viewBox` includes extra height for tail depth during morph.
 - Corner rounding is controlled by:
@@ -57,6 +57,7 @@ Notes:
   - `tailTipOffsetX` (how far the tip leads horizontally)
   - `minTailSpan` (minimum base width so the tail keeps a liquid pull)
 - Hover/leave use direct string morph targets (`morphSVG: pathData`) with single-stage tweens and `sine.inOut` easing for a smoother fluid resize.
+- Current default values are tuned for a smaller ripple while retaining the liquid feel.
 
 **Assumptions**
 - `.nav-pill` integration CSS positions/overlays the SVG behind label content (for example using relative/absolute stacking and `pointer-events` handling).

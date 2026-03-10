@@ -1,6 +1,6 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.11.2";
-  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: classic-softened-bulge)`);
+  const SCRIPT_VERSION = "2026.03.11.3";
+  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: classic-subtle-ripple)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn(`[nav_pill] v${SCRIPT_VERSION} missing GSAP or MorphSVGPlugin.`);
@@ -17,10 +17,10 @@ window.addEventListener("load", () => {
     tailWidth: 25,
     tailHeight: 30,
     tailOffsetX: 18,
-    tailTipOffsetX: 20,
+    tailTipOffsetX: 18,
     // keeps tail geometry away from the far-right corner to soften arc bulge
-    rightCornerGuard: 5,
-    minTailSpan: 8,
+    rightCornerGuard: 7,
+    minTailSpan: 7,
     hoverScale: 1.04,
 
     // visual spacing around the body shape
