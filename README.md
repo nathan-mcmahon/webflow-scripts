@@ -45,7 +45,7 @@ Notes:
 
 **Setup notes**
 - The script waits for `window.load`.
-- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v3-slow-debug)``.
+- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v4-bulge-guard)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
 - The SVG `viewBox` includes extra height for tail depth during morph.
 - Corner rounding is controlled by:
@@ -65,6 +65,7 @@ Notes:
   - `liquidStageTailTipOffsetAdjust` (temporary tip x adjustment during bridge)
   - `liquidWaveRatio`, `liquidWaveMin`, `liquidWaveMax` (S-wave amplitude)
   - `liquidWaveOutFactor`, `liquidWaveInFactor` (how strongly the S-wave bows out/in)
+  - `liquidWaveMaxOutwardPx`, `waveRightEnvelopeInsetPx` (caps convex overshoot to prevent harsh bulge)
 - Concave settle stage is controlled by:
   - `concaveStageTailDepthRatio`, `concaveStageRightInsetBoost`, `concaveStageTailTipOffsetAdjust`
   - `concaveWaveRatio`, `concaveWaveMin`, `concaveWaveMax`

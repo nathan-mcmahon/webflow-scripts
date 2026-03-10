@@ -1,6 +1,6 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.11.9";
-  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v3-slow-debug)`);
+  const SCRIPT_VERSION = "2026.03.11.10";
+  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v4-bulge-guard)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn(`[nav_pill] v${SCRIPT_VERSION} missing GSAP or MorphSVGPlugin.`);
@@ -34,6 +34,9 @@ window.addEventListener("load", () => {
     liquidWaveMax: 18,
     liquidWaveOutFactor: 1.15,
     liquidWaveInFactor: 1.65,
+    // cap convex overshoot so liquid stage stays wavy without hard bulge
+    liquidWaveMaxOutwardPx: 1.1,
+    waveRightEnvelopeInsetPx: 0.8,
     // quick concave brake stage just before settle
     concaveStageTailDepthRatio: 0.96,
     concaveStageRightInsetBoost: 0.9,
@@ -194,6 +197,8 @@ window.addEventListener("load", () => {
     liquidWave,
     waveOutFactor,
     waveInFactor,
+    maxOutwardPx,
+    rightEnvelopeInsetPx,
     minWaveSideSpan
   ) {
     const left = sideInset;
@@ -209,7 +214,10 @@ window.addEventListener("load", () => {
     const sideSpan = Math.max(0, endY - startY);
     const wave = clamp(liquidWave, 0, sideSpan * 0.45);
 
-    const cp1X = right + (wave * waveOutFactor);
+    const cp1Raw = right + (wave * waveOutFactor);
+    const cp1MaxByWave = right + maxOutwardPx;
+    const cp1MaxByEnvelope = (w - sideInset) - rightEnvelopeInsetPx;
+    const cp1X = Math.min(cp1Raw, cp1MaxByWave, cp1MaxByEnvelope);
     const cp1Y = startY + (sideSpan * 0.36);
     const cp2X = right - (wave * waveInFactor);
     const cp2Y = startY + (sideSpan * 0.72);
@@ -406,6 +414,8 @@ window.addEventListener("load", () => {
         liquidWave,
         CONFIG.liquidWaveOutFactor,
         CONFIG.liquidWaveInFactor,
+        CONFIG.liquidWaveMaxOutwardPx,
+        CONFIG.waveRightEnvelopeInsetPx,
         minWaveSideSpan
       );
       const concaveD = makeConcaveSettlePath(
