@@ -45,6 +45,7 @@ Notes:
 
 **Setup notes**
 - The script waits for `window.load`.
+- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
 - The SVG `viewBox` includes extra height for tail depth during morph.
 - Corner rounding is controlled by:

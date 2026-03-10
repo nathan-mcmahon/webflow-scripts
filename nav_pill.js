@@ -1,6 +1,9 @@
 window.addEventListener("load", () => {
+  const SCRIPT_VERSION = "2026.03.10.2";
+  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded`);
+
   if (!window.gsap || !window.MorphSVGPlugin) {
-    console.warn("GSAP or MorphSVGPlugin missing.");
+    console.warn(`[nav_pill] v${SCRIPT_VERSION} missing GSAP or MorphSVGPlugin.`);
     return;
   }
 
