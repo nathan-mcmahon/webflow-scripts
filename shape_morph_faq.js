@@ -3,8 +3,6 @@ window.addEventListener("load", () => {
   // Guard against duplicate embed/script instances on the same page.
   if (window.__faqBubbleMorphInit) return;
   window.__faqBubbleMorphInit = true;
-  const SCRIPT_VERSION = "1.0.6";
-  console.info(`[shape_morph_faq] v${SCRIPT_VERSION} loaded`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn("GSAP or MorphSVGPlugin missing.");
@@ -14,6 +12,7 @@ window.addEventListener("load", () => {
   gsap.registerPlugin(MorphSVGPlugin);
 
   const CONFIG = {
+    // Closed/resting bubble geometry tuning.
     closed: {
       radius: 20,
       tailWidth: 35,
@@ -25,6 +24,7 @@ window.addEventListener("load", () => {
       tipNudgeY: 0,
       tailCurveSkew: 0.08
     },
+    // Open bubble geometry tuning (final open tail shape/position).
     open: {
       radius: 33,
       tailWidth: 42,
@@ -36,6 +36,9 @@ window.addEventListener("load", () => {
       tipNudgeY: 0,
       tailCurveSkew: -0.26
     },
+    // Open-end tail pop tuning:
+    // increase `extraTailHeight` / `extraTipNudgeY` for more pop.
+    // timings control how fast pop, overshoot, and settle feel.
     openTailOvershoot: {
       popDuration: 0.12,
       extraTailHeight: 8,
@@ -260,6 +263,8 @@ window.addEventListener("load", () => {
 
     function buildPathSet() {
       const { w, h, bodyAt } = getPathMetrics();
+      // Mid-transition absorb blend (closed -> absorbed -> flat-tail while opening).
+      // Raise/lower to adjust how quickly the original tail is swallowed during resize.
       const absorbT = 0.56;
       const absorbedRadius = Math.round(lerp(CONFIG.closed.radius, CONFIG.open.radius, 0.42));
       const absorbedTailWidth = Math.max(

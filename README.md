@@ -64,8 +64,10 @@ Notes:
 - Visual tuning values are in the top-level `CONFIG` object:
   - bubble radii, tail geometry, insets, min heights, open fill color.
   - open-only tail pop/overshoot controls under `openTailOvershoot`.
-- Script boot logging includes `SCRIPT_VERSION` and prints `[shape_morph_faq] v{version} loaded` to console.
-- Bump `SCRIPT_VERSION` on each script change so published pages can be verified against the expected build.
+- Inline code comments in `CONFIG` mark the main future tuning points for:
+  - closed-tail shape
+  - open-tail shape
+  - open-tail pop/overshoot amount and timing
 - It applies inline positioning/z-index styles to keep bubble behind content.
 - Open resize uses live geometry each frame for `0.44s`, so height growth starts immediately and runs in sync with tail absorb/radius changes.
 - Opening sequence is staged as:
