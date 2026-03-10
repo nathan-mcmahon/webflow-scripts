@@ -45,7 +45,7 @@ Notes:
 
 **Setup notes**
 - The script waits for `window.load`.
-- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: classic-subtle-ripple)``.
+- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: classic-softened-arc-v2)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
 - The SVG `viewBox` includes extra height for tail depth during morph.
 - Corner rounding is controlled by:
@@ -56,6 +56,9 @@ Notes:
   - `rightCornerGuard` (keeps right-side tail geometry away from the corner arc)
   - `tailTipOffsetX` (how far the tip leads horizontally)
   - `minTailSpan` (minimum base width so the tail keeps a liquid pull)
+- Bubble right-side protrusion compensation is controlled by:
+  - `bubbleRightInsetRatio` (inset amount derived from current radius)
+  - `bubbleRightInsetMin` and `bubbleRightInsetMax` (bounds for that inset)
 - Hover/leave use direct string morph targets (`morphSVG: pathData`) with single-stage tweens and `sine.inOut` easing for a smoother fluid resize.
 - Current default values are tuned for a smaller ripple while retaining the liquid feel.
 

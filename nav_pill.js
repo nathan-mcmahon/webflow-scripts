@@ -1,6 +1,6 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.11.3";
-  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: classic-subtle-ripple)`);
+  const SCRIPT_VERSION = "2026.03.11.4";
+  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: classic-softened-arc-v2)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn(`[nav_pill] v${SCRIPT_VERSION} missing GSAP or MorphSVGPlugin.`);
@@ -21,6 +21,10 @@ window.addEventListener("load", () => {
     // keeps tail geometry away from the far-right corner to soften arc bulge
     rightCornerGuard: 7,
     minTailSpan: 7,
+    // inward bubble-side compensation so large radii do not protrude during morph
+    bubbleRightInsetRatio: 0.18,
+    bubbleRightInsetMin: 1.5,
+    bubbleRightInsetMax: 4,
     hoverScale: 1.04,
 
     // visual spacing around the body shape
@@ -56,9 +60,9 @@ window.addEventListener("load", () => {
     `.replace(/\s+/g, " ").trim();
   }
 
-  function getSoftBubbleTailGeometry(w, r, tailWidth, tailOffsetX, tailTipOffsetX, sideInset, rightCornerGuard, minTailSpan) {
+  function getSoftBubbleTailGeometry(w, r, tailWidth, tailOffsetX, tailTipOffsetX, sideInset, rightCornerGuard, minTailSpan, bubbleRightInset) {
     const left = sideInset;
-    const right = w - sideInset;
+    const right = w - sideInset - bubbleRightInset;
     const centerX = (w / 2) + tailOffsetX;
 
     const rawTailBaseLeft = centerX - (tailWidth * 0.55);
@@ -95,10 +99,10 @@ window.addEventListener("load", () => {
     };
   }
 
-  function makeBubblePath(w, bodyH, r, tailHeight, topInset, sideInset, tailGeometry) {
+  function makeBubblePath(w, bodyH, r, tailHeight, topInset, sideInset, tailGeometry, bubbleRightInset) {
     const left = sideInset;
     const top = topInset;
-    const right = w - sideInset;
+    const right = w - sideInset - bubbleRightInset;
     const bodyBottom = top + bodyH;
 
     const { tailBaseLeft, tailBaseRight, tipX } = tailGeometry;
@@ -158,6 +162,11 @@ window.addEventListener("load", () => {
         maxRadius,
         Math.max(CONFIG.minRadius, bodyH * CONFIG.radiusRatio)
       );
+      const bubbleRightInset = clamp(
+        radius * CONFIG.bubbleRightInsetRatio,
+        CONFIG.bubbleRightInsetMin,
+        CONFIG.bubbleRightInsetMax
+      );
 
       const tailGeometry = getSoftBubbleTailGeometry(
         w,
@@ -167,7 +176,8 @@ window.addEventListener("load", () => {
         CONFIG.tailTipOffsetX,
         CONFIG.sideInset,
         CONFIG.rightCornerGuard,
-        CONFIG.minTailSpan
+        CONFIG.minTailSpan,
+        bubbleRightInset
       );
 
       svg.setAttribute("viewBox", `0 0 ${w} ${svgH}`);
@@ -187,7 +197,8 @@ window.addEventListener("load", () => {
         CONFIG.tailHeight,
         adjustedTopInset,
         CONFIG.sideInset,
-        tailGeometry
+        tailGeometry,
+        bubbleRightInset
       );
 
       path.setAttribute("d", pillD);
