@@ -45,7 +45,7 @@ Notes:
 
 **Setup notes**
 - The script waits for `window.load`.
-- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-bridge-v1)``.
+- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v1)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
 - The SVG `viewBox` includes extra height for tail depth during morph.
 - Corner rounding is controlled by:
@@ -63,10 +63,16 @@ Notes:
   - `liquidStageTailDepthRatio` (temporary tail depth in the bridge state)
   - `liquidStageRightInsetBoost` (extra right inset during bridge state)
   - `liquidStageTailTipOffsetAdjust` (temporary tip x adjustment during bridge)
-  - `liquidWaveRatio`, `liquidWaveMin`, `liquidWaveMax` (right-side S-wave amplitude)
-  - `liquidStageDurationEnter`, `liquidStageDurationExit`, `finalStageDurationEnter`, `finalStageDurationExit`
-- Hover/leave use direct string morph targets (`morphSVG: pathData`) in a two-step timeline (`pill -> liquid -> bubble` and reverse).
-- Current default values are tuned for a smaller ripple while retaining the liquid feel.
+  - `liquidWaveRatio`, `liquidWaveMin`, `liquidWaveMax` (S-wave amplitude)
+  - `liquidWaveOutFactor`, `liquidWaveInFactor` (how strongly the S-wave bows out/in)
+- Concave settle stage is controlled by:
+  - `concaveStageTailDepthRatio`, `concaveStageRightInsetBoost`, `concaveStageTailTipOffsetAdjust`
+  - `concaveWaveRatio`, `concaveWaveMin`, `concaveWaveMax`
+  - `concaveWaveInFactor1`, `concaveWaveInFactor2` (inward pull strength before settle)
+  - `liquidStageDurationEnter`, `concaveStageDurationEnter`, `finalStageDurationEnter`
+  - `concaveStageDurationExit`, `liquidStageDurationExit`, `finalStageDurationExit`
+- Hover/leave use direct string morph targets (`morphSVG: pathData`) in a staged timeline (`pill -> liquid -> concave -> bubble` and reverse).
+- Current defaults intentionally exaggerate the mid-transition wave so the S/concave motion is visible before final settle.
 
 **Assumptions**
 - `.nav-pill` integration CSS positions/overlays the SVG behind label content (for example using relative/absolute stacking and `pointer-events` handling).
