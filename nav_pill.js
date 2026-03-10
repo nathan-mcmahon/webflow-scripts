@@ -25,11 +25,49 @@ window.addEventListener("load", () => {
     tailCenterCompensation: 0.3
   };
 
-  function makePillPath(w, bodyH, r, topInset, sideInset) {
+  function getTailGeometry(w, r, tailWidth, tailOffsetX, sideInset) {
+    const left = sideInset;
+    const right = w - sideInset;
+    const centerX = w / 2 + tailOffsetX;
+    const rawTailBaseLeft = centerX - (tailWidth * 0.55);
+    const rawTailBaseRight = centerX + (tailWidth * 0.75);
+    const minBaseX = left + r;
+    const maxBaseX = right - r;
+    const availableBaseWidth = Math.max(0, maxBaseX - minBaseX);
+
+    let tailBaseLeft = Math.min(maxBaseX, Math.max(minBaseX, rawTailBaseLeft));
+    let tailBaseRight = Math.min(maxBaseX, Math.max(minBaseX, rawTailBaseRight));
+
+    if (availableBaseWidth === 0) {
+      tailBaseLeft = minBaseX;
+      tailBaseRight = minBaseX;
+    } else {
+      const minTailSpan = Math.min(8, availableBaseWidth);
+      if ((tailBaseRight - tailBaseLeft) < minTailSpan) {
+        const clampedCenter = Math.min(
+          maxBaseX - (minTailSpan / 2),
+          Math.max(minBaseX + (minTailSpan / 2), centerX)
+        );
+        tailBaseLeft = clampedCenter - (minTailSpan / 2);
+        tailBaseRight = clampedCenter + (minTailSpan / 2);
+      }
+    }
+
+    const tipX = Math.min(maxBaseX, Math.max(minBaseX, centerX + 20));
+
+    return {
+      tailBaseLeft,
+      tailBaseRight,
+      tipX
+    };
+  }
+
+  function makePillPath(w, bodyH, r, topInset, sideInset, tailGeometry) {
     const left = sideInset;
     const top = topInset;
     const right = w - sideInset;
     const bottom = top + bodyH;
+    const { tailBaseLeft, tailBaseRight, tipX } = tailGeometry;
 
     return `
       M ${left + r} ${top}
@@ -37,6 +75,9 @@ window.addEventListener("load", () => {
       Q ${right} ${top} ${right} ${top + r}
       V ${bottom - r}
       Q ${right} ${bottom} ${right - r} ${bottom}
+      H ${tailBaseRight}
+      L ${tipX} ${bottom}
+      L ${tailBaseLeft} ${bottom}
       H ${left + r}
       Q ${left} ${bottom} ${left} ${bottom - r}
       V ${top + r}
@@ -45,16 +86,12 @@ window.addEventListener("load", () => {
     `.replace(/\s+/g, " ").trim();
   }
 
-  function makeBubblePath(w, bodyH, r, tailWidth, tailHeight, tailOffsetX, topInset, sideInset) {
+  function makeBubblePath(w, bodyH, r, tailHeight, topInset, sideInset, tailGeometry) {
     const left = sideInset;
     const top = topInset;
     const right = w - sideInset;
     const bodyBottom = top + bodyH;
-
-    const centerX = w / 2 + tailOffsetX;
-    const tailBaseLeft = centerX - (tailWidth * 0.55);
-    const tailBaseRight = centerX + (tailWidth * 0.75);
-    const tipX = centerX + 20;
+    const { tailBaseLeft, tailBaseRight, tipX } = tailGeometry;
     const tipY = bodyBottom + tailHeight;
 
     return `
@@ -110,6 +147,13 @@ window.addEventListener("load", () => {
         maxRadius,
         Math.max(CONFIG.minRadius, bodyH * CONFIG.radiusRatio)
       );
+      const tailGeometry = getTailGeometry(
+        w,
+        radius,
+        CONFIG.tailWidth,
+        CONFIG.tailOffsetX,
+        CONFIG.sideInset
+      );
 
       svg.setAttribute("viewBox", `0 0 ${w} ${svgH}`);
 
@@ -118,18 +162,18 @@ window.addEventListener("load", () => {
         bodyH,
         radius,
         adjustedTopInset,
-        CONFIG.sideInset
+        CONFIG.sideInset,
+        tailGeometry
       );
 
       const bubbleD = makeBubblePath(
         w,
         bodyH,
         radius,
-        CONFIG.tailWidth,
         CONFIG.tailHeight,
-        CONFIG.tailOffsetX,
         adjustedTopInset,
-        CONFIG.sideInset
+        CONFIG.sideInset,
+        tailGeometry
       );
 
       path.setAttribute("d", pillD);
@@ -147,7 +191,10 @@ window.addEventListener("load", () => {
     pill.addEventListener("mouseenter", () => {
       gsap.to(path, {
         duration: 0.45,
-        morphSVG: path.dataset.bubble,
+        morphSVG: {
+          shape: path.dataset.bubble,
+          shapeIndex: 0
+        },
         ease: "power2.out"
       });
 
@@ -161,7 +208,10 @@ window.addEventListener("load", () => {
     pill.addEventListener("mouseleave", () => {
       gsap.to(path, {
         duration: 0.45,
-        morphSVG: path.dataset.pill,
+        morphSVG: {
+          shape: path.dataset.pill,
+          shapeIndex: 0
+        },
         ease: "power2.out"
       });
 

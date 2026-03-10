@@ -51,6 +51,8 @@ Notes:
   - `radiusRatio` (`0.5` = fully pill-shaped ends, based on body height)
   - `minRadius` (keeps small pills from looking too square)
 - Radius is clamped to safe geometry bounds before path generation.
+- Tail base anchors are clamped inside the bottom straight segment between rounded corners.
+- The rest-state pill path keeps a collapsed tail segment so it shares segment topology with the bubble path, reducing right-edge bulge artifacts during morph.
 - Hover/leave animations are GSAP tweens that morph between cached path strings (`data-pill` and `data-bubble`).
 
 **Assumptions**
