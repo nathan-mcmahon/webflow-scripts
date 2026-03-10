@@ -1,4 +1,4 @@
-<script>
+
 window.addEventListener("load", () => {
   // Guard against duplicate embed/script instances on the same page.
   if (window.__faqBubbleMorphInit) return;
@@ -12,6 +12,7 @@ window.addEventListener("load", () => {
   gsap.registerPlugin(MorphSVGPlugin);
 
   const CONFIG = {
+    // Closed/resting bubble geometry tuning.
     closed: {
       radius: 20,
       tailWidth: 35,
@@ -23,6 +24,7 @@ window.addEventListener("load", () => {
       tipNudgeY: 0,
       tailCurveSkew: 0.08
     },
+    // Open bubble geometry tuning (final open tail shape/position).
     open: {
       radius: 33,
       tailWidth: 42,
@@ -33,6 +35,16 @@ window.addEventListener("load", () => {
       tipNudgeX: -18,
       tipNudgeY: 0,
       tailCurveSkew: -0.26
+    },
+    // Open-end tail pop tuning:
+    // increase `extraTailHeight` / `extraTipNudgeY` for more pop.
+    // timings control how fast pop, overshoot, and settle feel.
+    openTailOvershoot: {
+      popDuration: 0.12,
+      extraTailHeight: 8,
+      extraTipNudgeY: 3,
+      extendDuration: 0.08,
+      settleDuration: 0.16
     },
     minFrameHeight: 90,
     frameHeightPad: 20,
@@ -57,7 +69,8 @@ window.addEventListener("load", () => {
     bodyBottom,
     topInset,
     sideInset,
-    bottomInset
+    bottomInset,
+    minTipDrop = 2
   ) {
     const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
     const left = sideInset;
@@ -101,7 +114,7 @@ window.addEventListener("load", () => {
     const tipX = clamp(centerX + tipNudgeX, left + rr + 1, right - rr - 1);
     const tipY = clamp(
       bodyY + tailHeight + tipNudgeY,
-      bodyY + 2,
+      bodyY + minTipDrop,
       h - bottomInset
     );
 
@@ -204,6 +217,9 @@ window.addEventListener("load", () => {
     let currentOpen = null;
     let tl = null;
     let isAnimating = false;
+    let animationStage = "idle";
+    let animationRunId = 0;
+    const lerp = (a, b, t) => a + ((b - a) * t);
 
     function getIsOpen() {
       return (
@@ -214,10 +230,9 @@ window.addEventListener("load", () => {
       );
     }
 
-    function buildPathSet() {
+    function getPathMetrics() {
       const itemRect = accordionItem.getBoundingClientRect();
       const toggleRect = toggle.getBoundingClientRect();
-
       const w = Math.max(80, Math.round(itemRect.width));
       const baseFrameH = Math.round(toggleRect.height + CONFIG.frameHeightPad);
       const h = Math.max(CONFIG.minFrameHeight, baseFrameH, Math.round(itemRect.height));
@@ -243,6 +258,26 @@ window.addEventListener("load", () => {
       svg.setAttribute("width", `${w}`);
       svg.setAttribute("height", `${h}`);
 
+      return { w, h, bodyAt };
+    }
+
+    function buildPathSet() {
+      const { w, h, bodyAt } = getPathMetrics();
+      // Mid-transition absorb blend (closed -> absorbed -> flat-tail while opening).
+      // Raise/lower to adjust how quickly the original tail is swallowed during resize.
+      const absorbT = 0.56;
+      const absorbedRadius = Math.round(lerp(CONFIG.closed.radius, CONFIG.open.radius, 0.42));
+      const absorbedTailWidth = Math.max(
+        6,
+        Math.round(lerp(CONFIG.closed.tailWidth, CONFIG.open.tailWidth, 0.24) * 0.2)
+      );
+      const absorbedTailOffsetX = Math.round(
+        lerp(CONFIG.closed.tailOffsetX, CONFIG.open.tailOffsetX, absorbT)
+      );
+      const absorbedTipNudgeX = Math.round(
+        lerp(CONFIG.closed.tipNudgeX, CONFIG.open.tipNudgeX, absorbT)
+      );
+
       return {
         closed: makeBubblePath(
           w, h,
@@ -260,6 +295,39 @@ window.addEventListener("load", () => {
           CONFIG.sideInset,
           CONFIG.bottomInset
         ),
+        absorbed: makeBubblePath(
+          w, h,
+          absorbedRadius,
+          absorbedTailWidth,
+          0.7,
+          absorbedTailOffsetX,
+          0.5,
+          0.5,
+          absorbedTipNudgeX,
+          0,
+          0,
+          bodyAt(absorbT),
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
+        ),
+        openFlat: makeBubblePath(
+          w, h,
+          CONFIG.open.radius,
+          0,
+          0,
+          CONFIG.open.tailOffsetX,
+          0.5,
+          0.5,
+          0,
+          0,
+          0,
+          bodyAt(1),
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset,
+          0
+        ),
         open: makeBubblePath(
           w, h,
           CONFIG.open.radius,
@@ -275,13 +343,88 @@ window.addEventListener("load", () => {
           CONFIG.topInset,
           CONFIG.sideInset,
           CONFIG.bottomInset
+        ),
+        openOvershoot: makeBubblePath(
+          w, h,
+          CONFIG.open.radius,
+          CONFIG.open.tailWidth,
+          CONFIG.open.tailHeight + CONFIG.openTailOvershoot.extraTailHeight,
+          CONFIG.open.tailOffsetX,
+          CONFIG.open.tailLeftRatio,
+          CONFIG.open.tailRightRatio,
+          CONFIG.open.tipNudgeX,
+          CONFIG.open.tipNudgeY + CONFIG.openTailOvershoot.extraTipNudgeY,
+          CONFIG.open.tailCurveSkew,
+          bodyAt(1),
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
         )
       };
     }
 
+    function buildOpenResizePath(progress) {
+      const { w, h, bodyAt } = getPathMetrics();
+      const absorbT = 0.56;
+      const clampedProgress = Math.max(0, Math.min(1, progress));
+      const absorbedRadius = Math.round(lerp(CONFIG.closed.radius, CONFIG.open.radius, 0.42));
+      const absorbedTailWidth = Math.max(
+        6,
+        Math.round(lerp(CONFIG.closed.tailWidth, CONFIG.open.tailWidth, 0.24) * 0.2)
+      );
+      const absorbedTailOffsetX = Math.round(
+        lerp(CONFIG.closed.tailOffsetX, CONFIG.open.tailOffsetX, absorbT)
+      );
+      const absorbedTipNudgeX = Math.round(
+        lerp(CONFIG.closed.tipNudgeX, CONFIG.open.tipNudgeX, absorbT)
+      );
+
+      if (clampedProgress <= 0.5) {
+        const phaseT = clampedProgress / 0.5;
+        return makeBubblePath(
+          w, h,
+          lerp(CONFIG.closed.radius, absorbedRadius, phaseT),
+          lerp(CONFIG.closed.tailWidth, absorbedTailWidth, phaseT),
+          lerp(CONFIG.closed.tailHeight, 0.7, phaseT),
+          lerp(CONFIG.closed.tailOffsetX, absorbedTailOffsetX, phaseT),
+          lerp(CONFIG.closed.tailLeftRatio, 0.5, phaseT),
+          lerp(CONFIG.closed.tailRightRatio, 0.5, phaseT),
+          lerp(CONFIG.closed.tipNudgeX, absorbedTipNudgeX, phaseT),
+          0,
+          lerp(CONFIG.closed.tailCurveSkew, 0, phaseT),
+          bodyAt(absorbT * phaseT),
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
+        );
+      }
+
+      const phaseT = (clampedProgress - 0.5) / 0.5;
+      return makeBubblePath(
+        w, h,
+        lerp(absorbedRadius, CONFIG.open.radius, phaseT),
+        lerp(absorbedTailWidth, 0, phaseT),
+        lerp(0.7, 0, phaseT),
+        lerp(absorbedTailOffsetX, CONFIG.open.tailOffsetX, phaseT),
+        0.5,
+        0.5,
+        lerp(absorbedTipNudgeX, 0, phaseT),
+        0,
+        0,
+        bodyAt(absorbT + ((1 - absorbT) * phaseT)),
+        CONFIG.topInset,
+        CONFIG.sideInset,
+        CONFIG.bottomInset,
+        lerp(2, 0, phaseT)
+      );
+    }
+
     function storePathSet(paths) {
       path.dataset.closed = paths.closed;
+      path.dataset.absorbed = paths.absorbed;
+      path.dataset.openFlat = paths.openFlat;
       path.dataset.open = paths.open;
+      path.dataset.openOvershoot = paths.openOvershoot;
     }
 
     function morphStep(targetShape, duration, ease) {
@@ -316,29 +459,112 @@ window.addEventListener("load", () => {
 
       if (tl) tl.kill();
       isAnimating = true;
+      animationRunId += 1;
+      const thisRunId = animationRunId;
 
-      tl = gsap.timeline({
-        defaults: { overwrite: "auto" },
-        onComplete: () => {
-          isAnimating = false;
-          applyStatic(isOpen);
-        }
-      });
+      const finishAnimation = (finalIsOpen) => {
+        if (thisRunId !== animationRunId) return;
+        isAnimating = false;
+        animationStage = "idle";
+        applyStatic(finalIsOpen);
+      };
+
+      const waitForHeightSettle = (onSettled) => {
+        const stableForMs = 120;
+        const maxWaitMs = 900;
+        const heightTolerance = 0.75;
+        const startTime = performance.now();
+        let stableSince = startTime;
+        let prevHeight = accordionItem.getBoundingClientRect().height;
+
+        const tick = (now) => {
+          if (thisRunId !== animationRunId) return;
+          const nextHeight = accordionItem.getBoundingClientRect().height;
+          if (Math.abs(nextHeight - prevHeight) > heightTolerance) {
+            prevHeight = nextHeight;
+            stableSince = now;
+          }
+
+          if ((now - stableSince) >= stableForMs || (now - startTime) >= maxWaitMs) {
+            onSettled();
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+
+        requestAnimationFrame(tick);
+      };
+
+      tl = gsap.timeline({ defaults: { overwrite: "auto" } });
 
       if (isOpen) {
-        tl.to(path, morphStep(path.dataset.open, 0.44, "sine.inOut"), 0)
+        const openResizeDuration = 0.44;
+        const openResizeState = { progress: 0 };
+        animationStage = "open-resize";
+        path.setAttribute("d", buildOpenResizePath(0));
+
+        tl.to(openResizeState, {
+          duration: openResizeDuration,
+          progress: 1,
+          ease: "sine.inOut",
+          onUpdate: () => {
+            if (thisRunId !== animationRunId) return;
+            path.setAttribute("d", buildOpenResizePath(openResizeState.progress));
+          }
+        }, 0)
         .to(path, {
           duration: 0.22,
           fill: CONFIG.openFill,
           ease: "sine.out"
         }, 0.18);
+
+        tl.eventCallback("onComplete", () => {
+          if (thisRunId !== animationRunId) return;
+          animationStage = "open-wait-height";
+          waitForHeightSettle(() => {
+            if (thisRunId !== animationRunId) return;
+            refreshPathDataOnly();
+            path.setAttribute("d", path.dataset.openFlat);
+            animationStage = "open-tail";
+            tl = gsap.timeline({
+              defaults: { overwrite: "auto" },
+              onComplete: () => finishAnimation(true)
+            });
+            tl.to(
+              path,
+              morphStep(path.dataset.open, CONFIG.openTailOvershoot.popDuration, "sine.out"),
+              0
+            )
+            .to(
+              path,
+              morphStep(
+                path.dataset.openOvershoot,
+                CONFIG.openTailOvershoot.extendDuration,
+                "sine.out"
+              ),
+              CONFIG.openTailOvershoot.popDuration
+            )
+            .to(
+              path,
+              morphStep(
+                path.dataset.open,
+                CONFIG.openTailOvershoot.settleDuration,
+                "sine.inOut"
+              ),
+              CONFIG.openTailOvershoot.popDuration + CONFIG.openTailOvershoot.extendDuration
+            );
+          });
+        });
       } else {
-        tl.to(path, morphStep(path.dataset.closed, 0.36, "sine.inOut"), 0)
+        animationStage = "close";
+        tl.to(path, morphStep(path.dataset.absorbed, 0.18, "sine.inOut"), 0)
+        .to(path, morphStep(path.dataset.closed, 0.18, "sine.inOut"), 0.18)
         .to(path, {
           duration: 0.2,
           fill: "transparent",
           ease: "sine.out"
         }, 0);
+        tl.eventCallback("onComplete", () => finishAnimation(false));
       }
     }
 
@@ -369,6 +595,13 @@ window.addEventListener("load", () => {
     // keep path data matched to live size, but don't flatten active animation
     const ro = new ResizeObserver(() => {
       if (isAnimating) {
+        // Keep geometry/viewBox in sync with live height during morph.
+        // This avoids top-edge drift followed by a snap at animation end.
+        refreshPathDataOnly();
+        if (animationStage === "open-wait-height") {
+          // Hold a flat-tail shape while Webflow finishes expanding the item height.
+          path.setAttribute("d", path.dataset.openFlat);
+        }
         return;
       } else {
         applyStatic(getIsOpen());
@@ -433,4 +666,3 @@ window.addEventListener("load", () => {
     setupFaqItem(item);
   });
 });
-</script>

@@ -9,6 +9,8 @@ This repository contains standalone JavaScript snippets intended for use in Webf
 **Purpose**
 - Adds an animated SVG "speech bubble" background to FAQ accordion items.
 - Morphs the bubble shape and fill color when an item opens/closes.
+- Transition includes an absorbed midpoint where the original tail smoothly merges into the bottom edge.
+- During open, the bubble completes its height resize before the open tail reappears, then the tail pops out, slightly overshoots, and settles.
 - Tracks Webflow dropdown state and size changes so the bubble stays aligned.
 
 **Dependencies**
@@ -61,7 +63,22 @@ Notes:
 - It guards duplicate initialization with `window.__faqBubbleMorphInit`.
 - Visual tuning values are in the top-level `CONFIG` object:
   - bubble radii, tail geometry, insets, min heights, open fill color.
+  - open-only tail pop/overshoot controls under `openTailOvershoot`.
+- Inline code comments in `CONFIG` mark the main future tuning points for:
+  - closed-tail shape
+  - open-tail shape
+  - open-tail pop/overshoot amount and timing
 - It applies inline positioning/z-index styles to keep bubble behind content.
+- Open resize uses live geometry each frame for `0.44s`, so height growth starts immediately and runs in sync with tail absorb/radius changes.
+- Opening sequence is staged as:
+  - absorb initial tail while resizing (`0.22s`)
+  - finish resizing in a flat-tail state (`0.22s`)
+  - wait until observed item height is stable (about `120ms` stable window, capped at `900ms`)
+  - tail pop-out at final height (`0.12s`)
+  - subtle tail overshoot (`0.08s`) and settle (`0.16s`)
+- Current tuning uses a slightly stronger open-tail overshoot amplitude than previous revisions.
+- Close timing remains unchanged (`0.36s` total).
+- During active morph, resize updates still refresh geometry data so the top edge stays stable and does not snap upward at completion.
 - Add this CSS in the page/project `<head>` for wrapper layout and stroke styling:
 ```html
 <style>
@@ -103,36 +120,10 @@ Notes:
 ```
 
 **Assumptions**
-- The file includes literal `<script>...</script>` tags, so it appears intended for paste-in Webflow custom code/embed usage rather than direct external `src` loading.  
-  If you load it as an external `.js` file, remove wrapper tags first.
 - `.faq-shell` / `.faq-bubble-embed` are integration conventions for this project setup rather than hard runtime requirements of the JS logic itself.
+- Each `.accordion-item` has exactly one toggle target and one answer target (derived from first matches for `.w-dropdown-toggle, .dropdown-toggle` and `.answer, .w-dropdown-list`).
 
 ---
-
-### `script.js`
-
-**Purpose**
-- Simple debug/smoke-test script:
-  - logs load info to console
-  - outlines the page body in red
-
-**Dependencies**
-- None beyond standard browser DOM APIs.
-
-**Required Webflow classes**
-- None.
-
-**Expected HTML structure**
-- Requires `document.body` to exist when the script executes.
-
-**Where it should be loaded**
-- Load at end of `<body>` (or wrap in `DOMContentLoaded`) to ensure `document.body` is available.
-
-**Setup notes**
-- This is safe for local testing but likely not intended for production publishing.
-
-**Assumptions**
-- Because behavior is diagnostic-only (console logs + red outline), this appears to be a temporary debug helper.
 
 ## Maintenance
 
