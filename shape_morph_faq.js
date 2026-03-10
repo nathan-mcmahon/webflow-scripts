@@ -3,7 +3,7 @@ window.addEventListener("load", () => {
   // Guard against duplicate embed/script instances on the same page.
   if (window.__faqBubbleMorphInit) return;
   window.__faqBubbleMorphInit = true;
-  const SCRIPT_VERSION = "1.0.3";
+  const SCRIPT_VERSION = "1.0.4";
   console.info(`[shape_morph_faq] v${SCRIPT_VERSION} loaded`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
@@ -214,6 +214,8 @@ window.addEventListener("load", () => {
     let currentOpen = null;
     let tl = null;
     let isAnimating = false;
+    let animationStage = "idle";
+    let animationRunId = 0;
 
     function getIsOpen() {
       return (
@@ -391,53 +393,95 @@ window.addEventListener("load", () => {
 
       if (tl) tl.kill();
       isAnimating = true;
+      animationRunId += 1;
+      const thisRunId = animationRunId;
 
-      tl = gsap.timeline({
-        defaults: { overwrite: "auto" },
-        onComplete: () => {
-          isAnimating = false;
-          applyStatic(isOpen);
-        }
-      });
+      const finishAnimation = (finalIsOpen) => {
+        if (thisRunId !== animationRunId) return;
+        isAnimating = false;
+        animationStage = "idle";
+        applyStatic(finalIsOpen);
+      };
+
+      const waitForHeightSettle = (onSettled) => {
+        const stableForMs = 120;
+        const maxWaitMs = 900;
+        const heightTolerance = 0.75;
+        const startTime = performance.now();
+        let stableSince = startTime;
+        let prevHeight = accordionItem.getBoundingClientRect().height;
+
+        const tick = (now) => {
+          if (thisRunId !== animationRunId) return;
+          const nextHeight = accordionItem.getBoundingClientRect().height;
+          if (Math.abs(nextHeight - prevHeight) > heightTolerance) {
+            prevHeight = nextHeight;
+            stableSince = now;
+          }
+
+          if ((now - stableSince) >= stableForMs || (now - startTime) >= maxWaitMs) {
+            onSettled();
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+
+        requestAnimationFrame(tick);
+      };
+
+      tl = gsap.timeline({ defaults: { overwrite: "auto" } });
 
       if (isOpen) {
         const openResizeHalfDuration = 0.22;
-        const openResizeDuration = openResizeHalfDuration * 2;
-        const tailPopStart = openResizeDuration;
-        const tailOvershootStart = tailPopStart + CONFIG.openTailOvershoot.popDuration;
-        const tailSettleStart = tailOvershootStart + CONFIG.openTailOvershoot.extendDuration;
+        animationStage = "open-resize";
 
         tl.to(path, morphStep(path.dataset.absorbed, openResizeHalfDuration, "sine.inOut"), 0)
         .to(path, morphStep(path.dataset.openFlat, openResizeHalfDuration, "sine.inOut"), openResizeHalfDuration)
-        .to(
-          path,
-          morphStep(path.dataset.open, CONFIG.openTailOvershoot.popDuration, "sine.out"),
-          tailPopStart
-        )
-        .to(
-          path,
-          morphStep(
-            path.dataset.openOvershoot,
-            CONFIG.openTailOvershoot.extendDuration,
-            "sine.out"
-          ),
-          tailOvershootStart
-        )
-        .to(
-          path,
-          morphStep(
-            path.dataset.open,
-            CONFIG.openTailOvershoot.settleDuration,
-            "sine.inOut"
-          ),
-          tailSettleStart
-        )
         .to(path, {
           duration: 0.22,
           fill: CONFIG.openFill,
           ease: "sine.out"
         }, 0.18);
+
+        tl.eventCallback("onComplete", () => {
+          if (thisRunId !== animationRunId) return;
+          animationStage = "open-wait-height";
+          waitForHeightSettle(() => {
+            if (thisRunId !== animationRunId) return;
+            refreshPathDataOnly();
+            path.setAttribute("d", path.dataset.openFlat);
+            animationStage = "open-tail";
+            tl = gsap.timeline({
+              defaults: { overwrite: "auto" },
+              onComplete: () => finishAnimation(true)
+            });
+            tl.to(
+              path,
+              morphStep(path.dataset.open, CONFIG.openTailOvershoot.popDuration, "sine.out"),
+              0
+            )
+            .to(
+              path,
+              morphStep(
+                path.dataset.openOvershoot,
+                CONFIG.openTailOvershoot.extendDuration,
+                "sine.out"
+              ),
+              CONFIG.openTailOvershoot.popDuration
+            )
+            .to(
+              path,
+              morphStep(
+                path.dataset.open,
+                CONFIG.openTailOvershoot.settleDuration,
+                "sine.inOut"
+              ),
+              CONFIG.openTailOvershoot.popDuration + CONFIG.openTailOvershoot.extendDuration
+            );
+          });
+        });
       } else {
+        animationStage = "close";
         tl.to(path, morphStep(path.dataset.absorbed, 0.18, "sine.inOut"), 0)
         .to(path, morphStep(path.dataset.closed, 0.18, "sine.inOut"), 0.18)
         .to(path, {
@@ -445,6 +489,7 @@ window.addEventListener("load", () => {
           fill: "transparent",
           ease: "sine.out"
         }, 0);
+        tl.eventCallback("onComplete", () => finishAnimation(false));
       }
     }
 
@@ -478,6 +523,10 @@ window.addEventListener("load", () => {
         // Keep geometry/viewBox in sync with live height during morph.
         // This avoids top-edge drift followed by a snap at animation end.
         refreshPathDataOnly();
+        if (animationStage === "open-wait-height") {
+          // Hold a flat-tail shape while Webflow finishes expanding the item height.
+          path.setAttribute("d", path.dataset.openFlat);
+        }
         return;
       } else {
         applyStatic(getIsOpen());
