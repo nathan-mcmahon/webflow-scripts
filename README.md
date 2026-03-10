@@ -64,6 +64,7 @@ Notes:
   - bubble radii, tail geometry, insets, min heights, open fill color.
 - It applies inline positioning/z-index styles to keep bubble behind content.
 - Open/close timing remains unchanged (`0.44s` open, `0.36s` close), but morphing now runs in two steps via an internal `absorbed` path.
+- During active morph, resize updates still refresh geometry data so the top edge stays stable and does not snap upward at completion.
 - Add this CSS in the page/project `<head>` for wrapper layout and stroke styling:
 ```html
 <style>

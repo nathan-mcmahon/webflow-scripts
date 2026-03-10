@@ -401,6 +401,9 @@ window.addEventListener("load", () => {
     // keep path data matched to live size, but don't flatten active animation
     const ro = new ResizeObserver(() => {
       if (isAnimating) {
+        // Keep geometry/viewBox in sync with live height during morph.
+        // This avoids top-edge drift followed by a snap at animation end.
+        refreshPathDataOnly();
         return;
       } else {
         applyStatic(getIsOpen());
@@ -465,4 +468,3 @@ window.addEventListener("load", () => {
     setupFaqItem(item);
   });
 });
-
