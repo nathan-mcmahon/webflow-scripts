@@ -3,6 +3,8 @@ window.addEventListener("load", () => {
   // Guard against duplicate embed/script instances on the same page.
   if (window.__faqBubbleMorphInit) return;
   window.__faqBubbleMorphInit = true;
+  const SCRIPT_VERSION = "1.0.3";
+  console.info(`[shape_morph_faq] v${SCRIPT_VERSION} loaded`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn("GSAP or MorphSVGPlugin missing.");
@@ -64,7 +66,8 @@ window.addEventListener("load", () => {
     bodyBottom,
     topInset,
     sideInset,
-    bottomInset
+    bottomInset,
+    minTipDrop = 2
   ) {
     const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
     const left = sideInset;
@@ -108,7 +111,7 @@ window.addEventListener("load", () => {
     const tipX = clamp(centerX + tipNudgeX, left + rr + 1, right - rr - 1);
     const tipY = clamp(
       bodyY + tailHeight + tipNudgeY,
-      bodyY + 2,
+      bodyY + minTipDrop,
       h - bottomInset
     );
 
@@ -246,7 +249,6 @@ window.addEventListener("load", () => {
         closedBodyBottom + ((openBodyBottom - closedBodyBottom) * t)
       );
       const absorbT = 0.56;
-      const openAbsorbT = 0.9;
       const absorbedRadius = Math.round(lerp(CONFIG.closed.radius, CONFIG.open.radius, 0.42));
       const absorbedTailWidth = Math.max(
         6,
@@ -257,15 +259,6 @@ window.addEventListener("load", () => {
       );
       const absorbedTipNudgeX = Math.round(
         lerp(CONFIG.closed.tipNudgeX, CONFIG.open.tipNudgeX, absorbT)
-      );
-      const absorbedOpenRadius = Math.round(
-        lerp(CONFIG.closed.radius, CONFIG.open.radius, 0.78)
-      );
-      const absorbedOpenTailOffsetX = Math.round(
-        lerp(CONFIG.closed.tailOffsetX, CONFIG.open.tailOffsetX, openAbsorbT)
-      );
-      const absorbedOpenTipNudgeX = Math.round(
-        lerp(CONFIG.closed.tipNudgeX, CONFIG.open.tipNudgeX, openAbsorbT)
       );
 
       svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
@@ -306,21 +299,22 @@ window.addEventListener("load", () => {
           CONFIG.sideInset,
           CONFIG.bottomInset
         ),
-        absorbedOpen: makeBubblePath(
+        openFlat: makeBubblePath(
           w, h,
-          absorbedOpenRadius,
-          absorbedTailWidth,
-          0.7,
-          absorbedOpenTailOffsetX,
+          CONFIG.open.radius,
+          0,
+          0,
+          CONFIG.open.tailOffsetX,
           0.5,
           0.5,
-          absorbedOpenTipNudgeX,
+          0,
           0,
           0,
           bodyAt(1),
           CONFIG.topInset,
           CONFIG.sideInset,
-          CONFIG.bottomInset
+          CONFIG.bottomInset,
+          0
         ),
         open: makeBubblePath(
           w, h,
@@ -360,7 +354,7 @@ window.addEventListener("load", () => {
     function storePathSet(paths) {
       path.dataset.closed = paths.closed;
       path.dataset.absorbed = paths.absorbed;
-      path.dataset.absorbedOpen = paths.absorbedOpen;
+      path.dataset.openFlat = paths.openFlat;
       path.dataset.open = paths.open;
       path.dataset.openOvershoot = paths.openOvershoot;
     }
@@ -407,12 +401,14 @@ window.addEventListener("load", () => {
       });
 
       if (isOpen) {
-        const openResizeDuration = 0.44;
+        const openResizeHalfDuration = 0.22;
+        const openResizeDuration = openResizeHalfDuration * 2;
         const tailPopStart = openResizeDuration;
         const tailOvershootStart = tailPopStart + CONFIG.openTailOvershoot.popDuration;
         const tailSettleStart = tailOvershootStart + CONFIG.openTailOvershoot.extendDuration;
 
-        tl.to(path, morphStep(path.dataset.absorbedOpen, openResizeDuration, "sine.inOut"), 0)
+        tl.to(path, morphStep(path.dataset.absorbed, openResizeHalfDuration, "sine.inOut"), 0)
+        .to(path, morphStep(path.dataset.openFlat, openResizeHalfDuration, "sine.inOut"), openResizeHalfDuration)
         .to(
           path,
           morphStep(path.dataset.open, CONFIG.openTailOvershoot.popDuration, "sine.out"),
