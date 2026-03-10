@@ -4,6 +4,61 @@ This repository contains standalone JavaScript snippets intended for use in Webf
 
 ## Script Inventory
 
+### `nav_pill.js`
+
+**Purpose**
+- Draws an SVG rounded-pill background for each nav pill item.
+- Morphs that shape into a bubble-tail variant on hover, then morphs back on mouse leave.
+- Scales the hovered pill slightly to reinforce interaction.
+- Rebuilds geometry on resize so the path stays aligned with label content.
+
+**Dependencies**
+- `gsap` (GreenSock Animation Platform) must be present on `window`.
+- `MorphSVGPlugin` must be present on `window`.
+- Browser API: `ResizeObserver`.
+
+**Required Webflow classes/selectors**
+- Required by script logic:
+  - Pill wrapper: `.nav-pill`
+  - SVG element inside each pill: `.pill-bg`
+  - Path inside SVG: `.pill-path`
+  - Label/content element inside each pill: `.pill-label`
+
+**Expected HTML structure**
+```html
+<a class="nav-pill">
+  <svg class="pill-bg" aria-hidden="true" focusable="false">
+    <path class="pill-path"></path>
+  </svg>
+  <span class="pill-label">Label</span>
+</a>
+```
+
+Notes:
+- The script expects one `.pill-bg`, `.pill-path`, and `.pill-label` per `.nav-pill`.
+- If any required child is missing, that pill is skipped.
+
+**Where it should be loaded**
+- Load on pages that include `.nav-pill` markup.
+- Ensure GSAP + MorphSVGPlugin load **before** this script.
+- Best location: page/footer custom code so DOM exists and dependencies are already loaded.
+
+**Setup notes**
+- The script waits for `window.load`.
+- Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
+- The SVG `viewBox` includes extra height for tail depth during morph.
+- Corner rounding is controlled by:
+  - `radiusRatio` (`0.5` = fully pill-shaped ends, based on body height)
+  - `minRadius` (keeps small pills from looking too square)
+- Radius is clamped to safe geometry bounds before path generation.
+- Hover/leave animations are GSAP tweens that morph between cached path strings (`data-pill` and `data-bubble`).
+
+**Assumptions**
+- `.nav-pill` integration CSS positions/overlays the SVG behind label content (for example using relative/absolute stacking and `pointer-events` handling).
+- `.nav-pill` elements are hoverable desktop targets; touch-only interactions are not handled by this script.
+
+---
+
 ### `shape_morph_faq.js`
 
 **Purpose**

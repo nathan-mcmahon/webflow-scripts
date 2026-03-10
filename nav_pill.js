@@ -7,7 +7,10 @@ window.addEventListener("load", () => {
   gsap.registerPlugin(MorphSVGPlugin);
 
   const CONFIG = {
-    radius: 14,
+    // 0.5 = fully pill-shaped ends (radius = half body height)
+    radiusRatio: 0.5,
+    // keeps very small pills from becoming too square
+    minRadius: 14,
     tailWidth: 25,
     tailHeight: 30,
     tailOffsetX: 18,
@@ -99,13 +102,21 @@ window.addEventListener("load", () => {
       // so the body stays visually centered around the label
       const adjustedTopInset =
         CONFIG.topInset + (CONFIG.tailHeight * CONFIG.tailCenterCompensation);
+      const maxRadius = Math.min(
+        bodyH / 2,
+        (w - (CONFIG.sideInset * 2)) / 2
+      );
+      const radius = Math.min(
+        maxRadius,
+        Math.max(CONFIG.minRadius, bodyH * CONFIG.radiusRatio)
+      );
 
       svg.setAttribute("viewBox", `0 0 ${w} ${svgH}`);
 
       const pillD = makePillPath(
         w,
         bodyH,
-        CONFIG.radius,
+        radius,
         adjustedTopInset,
         CONFIG.sideInset
       );
@@ -113,7 +124,7 @@ window.addEventListener("load", () => {
       const bubbleD = makeBubblePath(
         w,
         bodyH,
-        CONFIG.radius,
+        radius,
         CONFIG.tailWidth,
         CONFIG.tailHeight,
         CONFIG.tailOffsetX,
