@@ -17,6 +17,12 @@ window.addEventListener("load", () => {
     // how much the resting tail points are pulled toward center (0-1)
     liquidMorphBasePull: 0.32,
     liquidMorphTipPull: 0.5,
+    // intermediate liquid state between rest and full bubble
+    liquidMorphTailMix: 0.7,
+    liquidMorphTailDepth: 0.58,
+    liquidSideWave: 8,
+    pillSideWave: 0,
+    bubbleSideWave: 0.8,
     hoverScale: 1.04,
 
     // visual spacing around the body shape
@@ -30,6 +36,31 @@ window.addEventListener("load", () => {
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
+  }
+
+  function lerp(a, b, t) {
+    return a + ((b - a) * t);
+  }
+
+  function resolveSideWave(sideWave, radius) {
+    const maxWave = Math.max(1.5, Math.min(9, radius * 0.55));
+    return clamp(sideWave, 0, maxWave);
+  }
+
+  function getRightSideCurve(right, top, bottom, r, sideWave) {
+    const startY = top + r;
+    const endY = bottom - r;
+    const span = Math.max(0, endY - startY);
+    const safeWave = Math.max(0, sideWave);
+
+    return {
+      startY,
+      endY,
+      cp1X: right + (safeWave * 0.45),
+      cp1Y: startY + (span * 0.34),
+      cp2X: right - (safeWave * 0.85),
+      cp2Y: startY + (span * 0.72)
+    };
   }
 
   function getTailGeometry(w, r, tailWidth, tailOffsetX, sideInset) {
@@ -111,18 +142,28 @@ window.addEventListener("load", () => {
     };
   }
 
-  function makePillPath(w, bodyH, r, topInset, sideInset, tailGeometry) {
+  function interpolateTailGeometry(fromTail, toTail, mix) {
+    const t = clamp(mix, 0, 1);
+    return {
+      tailBaseLeft: lerp(fromTail.tailBaseLeft, toTail.tailBaseLeft, t),
+      tailBaseRight: lerp(fromTail.tailBaseRight, toTail.tailBaseRight, t),
+      tipX: lerp(fromTail.tipX, toTail.tipX, t)
+    };
+  }
+
+  function makePillPath(w, bodyH, r, topInset, sideInset, tailGeometry, sideWave) {
     const left = sideInset;
     const top = topInset;
     const right = w - sideInset;
     const bottom = top + bodyH;
     const { tailBaseLeft, tailBaseRight, tipX } = tailGeometry;
+    const rightSide = getRightSideCurve(right, top, bottom, r, sideWave);
 
     return `
       M ${left + r} ${top}
       H ${right - r}
-      Q ${right} ${top} ${right} ${top + r}
-      V ${bottom - r}
+      Q ${right} ${top} ${right} ${rightSide.startY}
+      C ${rightSide.cp1X} ${rightSide.cp1Y} ${rightSide.cp2X} ${rightSide.cp2Y} ${right} ${rightSide.endY}
       Q ${right} ${bottom} ${right - r} ${bottom}
       H ${tailBaseRight}
       L ${tipX} ${bottom}
@@ -135,19 +176,20 @@ window.addEventListener("load", () => {
     `.replace(/\s+/g, " ").trim();
   }
 
-  function makeBubblePath(w, bodyH, r, tailHeight, topInset, sideInset, tailGeometry) {
+  function makeBubblePath(w, bodyH, r, tailHeight, topInset, sideInset, tailGeometry, sideWave) {
     const left = sideInset;
     const top = topInset;
     const right = w - sideInset;
     const bodyBottom = top + bodyH;
     const { tailBaseLeft, tailBaseRight, tipX } = tailGeometry;
     const tipY = bodyBottom + tailHeight;
+    const rightSide = getRightSideCurve(right, top, bodyBottom, r, sideWave);
 
     return `
       M ${left + r} ${top}
       H ${right - r}
-      Q ${right} ${top} ${right} ${top + r}
-      V ${bodyBottom - r}
+      Q ${right} ${top} ${right} ${rightSide.startY}
+      C ${rightSide.cp1X} ${rightSide.cp1Y} ${rightSide.cp2X} ${rightSide.cp2Y} ${right} ${rightSide.endY}
       Q ${right} ${bodyBottom} ${right - r} ${bodyBottom}
       H ${tailBaseRight}
       L ${tipX} ${tipY}
@@ -165,6 +207,7 @@ window.addEventListener("load", () => {
     const path = pill.querySelector(".pill-path");
     const label = pill.querySelector(".pill-label");
     if (!svg || !path || !label) return;
+    let morphTl = null;
 
     function measure() {
       const rect = pill.getBoundingClientRect();
@@ -208,6 +251,14 @@ window.addEventListener("load", () => {
         CONFIG.liquidMorphBasePull,
         CONFIG.liquidMorphTipPull
       );
+      const liquidTailGeometry = interpolateTailGeometry(
+        pillTailGeometry,
+        bubbleTailGeometry,
+        CONFIG.liquidMorphTailMix
+      );
+      const pillSideWave = resolveSideWave(CONFIG.pillSideWave, radius);
+      const liquidSideWave = resolveSideWave(CONFIG.liquidSideWave, radius);
+      const bubbleSideWave = resolveSideWave(CONFIG.bubbleSideWave, radius);
 
       svg.setAttribute("viewBox", `0 0 ${w} ${svgH}`);
 
@@ -217,7 +268,19 @@ window.addEventListener("load", () => {
         radius,
         adjustedTopInset,
         CONFIG.sideInset,
-        pillTailGeometry
+        pillTailGeometry,
+        pillSideWave
+      );
+
+      const liquidD = makeBubblePath(
+        w,
+        bodyH,
+        radius,
+        CONFIG.tailHeight * CONFIG.liquidMorphTailDepth,
+        adjustedTopInset,
+        CONFIG.sideInset,
+        liquidTailGeometry,
+        liquidSideWave
       );
 
       const bubbleD = makeBubblePath(
@@ -227,11 +290,13 @@ window.addEventListener("load", () => {
         CONFIG.tailHeight,
         adjustedTopInset,
         CONFIG.sideInset,
-        bubbleTailGeometry
+        bubbleTailGeometry,
+        bubbleSideWave
       );
 
       path.setAttribute("d", pillD);
       path.dataset.pill = pillD;
+      path.dataset.liquid = liquidD;
       path.dataset.bubble = bubbleD;
     }
 
@@ -243,14 +308,25 @@ window.addEventListener("load", () => {
     ro.observe(pill);
 
     pill.addEventListener("mouseenter", () => {
-      gsap.to(path, {
-        duration: 0.45,
-        morphSVG: {
-          shape: path.dataset.bubble,
-          shapeIndex: 0
-        },
-        ease: "power2.out"
-      });
+      if (morphTl) morphTl.kill();
+      morphTl = gsap.timeline();
+      morphTl
+        .to(path, {
+          duration: 0.2,
+          morphSVG: {
+            shape: path.dataset.liquid,
+            shapeIndex: 0
+          },
+          ease: "sine.inOut"
+        })
+        .to(path, {
+          duration: 0.28,
+          morphSVG: {
+            shape: path.dataset.bubble,
+            shapeIndex: 0
+          },
+          ease: "power2.out"
+        });
 
       gsap.to(pill, {
         duration: 0.25,
@@ -260,14 +336,25 @@ window.addEventListener("load", () => {
     });
 
     pill.addEventListener("mouseleave", () => {
-      gsap.to(path, {
-        duration: 0.45,
-        morphSVG: {
-          shape: path.dataset.pill,
-          shapeIndex: 0
-        },
-        ease: "power2.out"
-      });
+      if (morphTl) morphTl.kill();
+      morphTl = gsap.timeline();
+      morphTl
+        .to(path, {
+          duration: 0.17,
+          morphSVG: {
+            shape: path.dataset.liquid,
+            shapeIndex: 0
+          },
+          ease: "sine.inOut"
+        })
+        .to(path, {
+          duration: 0.26,
+          morphSVG: {
+            shape: path.dataset.pill,
+            shapeIndex: 0
+          },
+          ease: "power2.out"
+        });
 
       gsap.to(pill, {
         duration: 0.25,

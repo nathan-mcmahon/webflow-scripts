@@ -56,8 +56,14 @@ Notes:
 - Rest-state tail points are pulled partway toward center using:
   - `liquidMorphBasePull` (base-anchor pull)
   - `liquidMorphTipPull` (tip x-position pull)
-- Bubble state uses the full tail geometry, so morphing regains some liquid lateral motion while remaining clamped to safe bounds.
-- Hover/leave animations are GSAP tweens that morph between cached path strings (`data-pill` and `data-bubble`).
+- The script builds an intermediate liquid path (`data-liquid`) using:
+  - `liquidMorphTailMix` (how close intermediate geometry is to full bubble)
+  - `liquidMorphTailDepth` (intermediate tail depth as a fraction of full tail height)
+- Right edge curvature is controlled per state with:
+  - `pillSideWave`
+  - `liquidSideWave`
+  - `bubbleSideWave`
+- Hover/leave use two-step GSAP timelines (`pill -> liquid -> bubble` and reverse) for a smoother S-curve style morph.
 
 **Assumptions**
 - `.nav-pill` integration CSS positions/overlays the SVG behind label content (for example using relative/absolute stacking and `pointer-events` handling).
