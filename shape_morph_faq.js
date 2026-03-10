@@ -34,6 +34,12 @@ window.addEventListener("load", () => {
       tipNudgeY: 0,
       tailCurveSkew: -0.26
     },
+    openTailOvershoot: {
+      extraTailHeight: 9,
+      extraTipNudgeY: 4,
+      extendDuration: 0.12,
+      settleDuration: 0.16
+    },
     minFrameHeight: 90,
     frameHeightPad: 20,
     sideInset: 6,
@@ -304,6 +310,22 @@ window.addEventListener("load", () => {
           CONFIG.topInset,
           CONFIG.sideInset,
           CONFIG.bottomInset
+        ),
+        openOvershoot: makeBubblePath(
+          w, h,
+          CONFIG.open.radius,
+          CONFIG.open.tailWidth,
+          CONFIG.open.tailHeight + CONFIG.openTailOvershoot.extraTailHeight,
+          CONFIG.open.tailOffsetX,
+          CONFIG.open.tailLeftRatio,
+          CONFIG.open.tailRightRatio,
+          CONFIG.open.tipNudgeX,
+          CONFIG.open.tipNudgeY + CONFIG.openTailOvershoot.extraTipNudgeY,
+          CONFIG.open.tailCurveSkew,
+          bodyAt(1),
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
         )
       };
     }
@@ -312,6 +334,7 @@ window.addEventListener("load", () => {
       path.dataset.closed = paths.closed;
       path.dataset.absorbed = paths.absorbed;
       path.dataset.open = paths.open;
+      path.dataset.openOvershoot = paths.openOvershoot;
     }
 
     function morphStep(targetShape, duration, ease) {
@@ -356,8 +379,30 @@ window.addEventListener("load", () => {
       });
 
       if (isOpen) {
+        const openMorphDuration = 0.22;
+        const tailOvershootStart = openMorphDuration * 2;
+        const tailSettleStart = tailOvershootStart + CONFIG.openTailOvershoot.extendDuration;
+
         tl.to(path, morphStep(path.dataset.absorbed, 0.22, "sine.inOut"), 0)
-        .to(path, morphStep(path.dataset.open, 0.22, "sine.inOut"), 0.22)
+        .to(path, morphStep(path.dataset.open, openMorphDuration, "sine.inOut"), openMorphDuration)
+        .to(
+          path,
+          morphStep(
+            path.dataset.openOvershoot,
+            CONFIG.openTailOvershoot.extendDuration,
+            "sine.out"
+          ),
+          tailOvershootStart
+        )
+        .to(
+          path,
+          morphStep(
+            path.dataset.open,
+            CONFIG.openTailOvershoot.settleDuration,
+            "sine.inOut"
+          ),
+          tailSettleStart
+        )
         .to(path, {
           duration: 0.22,
           fill: CONFIG.openFill,
