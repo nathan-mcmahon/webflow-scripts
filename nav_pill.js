@@ -1,6 +1,6 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.11.7";
-  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v2-amplified)`);
+  const SCRIPT_VERSION = "2026.03.11.8";
+  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v3-visible-span)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn(`[nav_pill] v${SCRIPT_VERSION} missing GSAP or MorphSVGPlugin.`);
@@ -43,6 +43,10 @@ window.addEventListener("load", () => {
     concaveWaveMax: 14,
     concaveWaveInFactor1: 1.0,
     concaveWaveInFactor2: 2.2,
+    // when pill radius reaches half-height, right-side span collapses to 0;
+    // force a small transition span so S/concave stages are visually expressed
+    morphWaveMinSideSpanRatio: 0.34,
+    morphWaveMinSideSpanPx: 10,
     liquidStageDurationEnter: 0.2,
     concaveStageDurationEnter: 0.14,
     finalStageDurationEnter: 0.24,
@@ -82,6 +86,29 @@ window.addEventListener("load", () => {
       Q ${left} ${top} ${left + r} ${top}
       Z
     `.replace(/\s+/g, " ").trim();
+  }
+
+  function getWaveSpanGuide(top, bottom, r, minSideSpan) {
+    const naturalStart = top + r;
+    const naturalEnd = bottom - r;
+    const naturalSpan = naturalEnd - naturalStart;
+
+    if (naturalSpan >= minSideSpan) {
+      return {
+        startY: naturalStart,
+        endY: naturalEnd
+      };
+    }
+
+    const centerY = (top + bottom) / 2;
+    const halfSpan = minSideSpan / 2;
+    const clampedStart = Math.max(top, centerY - halfSpan);
+    const clampedEnd = Math.min(bottom, centerY + halfSpan);
+
+    return {
+      startY: clampedStart,
+      endY: clampedEnd
+    };
   }
 
   function getSoftBubbleTailGeometry(w, r, tailWidth, tailOffsetX, tailTipOffsetX, sideInset, rightCornerGuard, minTailSpan, bubbleRightInset) {
@@ -160,7 +187,8 @@ window.addEventListener("load", () => {
     liquidRightInset,
     liquidWave,
     waveOutFactor,
-    waveInFactor
+    waveInFactor,
+    minWaveSideSpan
   ) {
     const left = sideInset;
     const top = topInset;
@@ -169,8 +197,9 @@ window.addEventListener("load", () => {
     const { tailBaseLeft, tailBaseRight, tipX } = tailGeometry;
     const tipY = bodyBottom + tailHeight;
 
-    const startY = top + r;
-    const endY = bodyBottom - r;
+    const waveGuide = getWaveSpanGuide(top, bodyBottom, r, minWaveSideSpan);
+    const startY = waveGuide.startY;
+    const endY = waveGuide.endY;
     const sideSpan = Math.max(0, endY - startY);
     const wave = clamp(liquidWave, 0, sideSpan * 0.45);
 
@@ -207,7 +236,8 @@ window.addEventListener("load", () => {
     concaveRightInset,
     concaveWave,
     concaveInFactor1,
-    concaveInFactor2
+    concaveInFactor2,
+    minWaveSideSpan
   ) {
     const left = sideInset;
     const top = topInset;
@@ -216,8 +246,9 @@ window.addEventListener("load", () => {
     const { tailBaseLeft, tailBaseRight, tipX } = tailGeometry;
     const tipY = bodyBottom + tailHeight;
 
-    const startY = top + r;
-    const endY = bodyBottom - r;
+    const waveGuide = getWaveSpanGuide(top, bodyBottom, r, minWaveSideSpan);
+    const startY = waveGuide.startY;
+    const endY = waveGuide.endY;
     const sideSpan = Math.max(0, endY - startY);
     const wave = clamp(concaveWave, 0, sideSpan * 0.5);
 
@@ -280,6 +311,10 @@ window.addEventListener("load", () => {
       const radius = Math.min(
         maxRadius,
         Math.max(CONFIG.minRadius, bodyH * CONFIG.radiusRatio)
+      );
+      const minWaveSideSpan = Math.max(
+        CONFIG.morphWaveMinSideSpanPx,
+        bodyH * CONFIG.morphWaveMinSideSpanRatio
       );
       const bubbleRightInset = clamp(
         radius * CONFIG.bubbleRightInsetRatio,
@@ -364,7 +399,8 @@ window.addEventListener("load", () => {
         liquidRightInset,
         liquidWave,
         CONFIG.liquidWaveOutFactor,
-        CONFIG.liquidWaveInFactor
+        CONFIG.liquidWaveInFactor,
+        minWaveSideSpan
       );
       const concaveD = makeConcaveSettlePath(
         w,
@@ -377,7 +413,8 @@ window.addEventListener("load", () => {
         concaveRightInset,
         concaveWave,
         CONFIG.concaveWaveInFactor1,
-        CONFIG.concaveWaveInFactor2
+        CONFIG.concaveWaveInFactor2,
+        minWaveSideSpan
       );
 
       path.setAttribute("d", pillD);

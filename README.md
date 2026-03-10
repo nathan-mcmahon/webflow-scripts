@@ -45,7 +45,7 @@ Notes:
 
 **Setup notes**
 - The script waits for `window.load`.
-- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v2-amplified)``.
+- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v3-visible-span)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
 - The SVG `viewBox` includes extra height for tail depth during morph.
 - Corner rounding is controlled by:
@@ -69,6 +69,7 @@ Notes:
   - `concaveStageTailDepthRatio`, `concaveStageRightInsetBoost`, `concaveStageTailTipOffsetAdjust`
   - `concaveWaveRatio`, `concaveWaveMin`, `concaveWaveMax`
   - `concaveWaveInFactor1`, `concaveWaveInFactor2` (inward pull strength before settle)
+  - `morphWaveMinSideSpanRatio`, `morphWaveMinSideSpanPx` (ensures wave stages stay visible when radius is capsule-like)
   - `liquidStageDurationEnter`, `concaveStageDurationEnter`, `finalStageDurationEnter`
   - `concaveStageDurationExit`, `liquidStageDurationExit`, `finalStageDurationExit`
 - Hover/leave use direct string morph targets (`morphSVG: pathData`) in a staged timeline (`pill -> liquid -> concave -> bubble` and reverse).
