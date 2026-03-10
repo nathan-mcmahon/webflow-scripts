@@ -67,9 +67,10 @@ Notes:
 - Script boot logging includes `SCRIPT_VERSION` and prints `[shape_morph_faq] v{version} loaded` to console.
 - Bump `SCRIPT_VERSION` on each script change so published pages can be verified against the expected build.
 - It applies inline positioning/z-index styles to keep bubble behind content.
+- Open resize uses live geometry each frame for `0.44s`, so height growth starts immediately and runs in sync with tail absorb/radius changes.
 - Opening sequence is staged as:
   - absorb initial tail while resizing (`0.22s`)
-  - finish resize in a flat-tail state (`0.22s`)
+  - finish resizing in a flat-tail state (`0.22s`)
   - wait until observed item height is stable (about `120ms` stable window, capped at `900ms`)
   - tail pop-out at final height (`0.12s`)
   - subtle tail overshoot (`0.08s`) and settle (`0.16s`)

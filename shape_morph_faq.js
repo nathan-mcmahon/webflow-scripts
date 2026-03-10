@@ -3,7 +3,7 @@ window.addEventListener("load", () => {
   // Guard against duplicate embed/script instances on the same page.
   if (window.__faqBubbleMorphInit) return;
   window.__faqBubbleMorphInit = true;
-  const SCRIPT_VERSION = "1.0.4";
+  const SCRIPT_VERSION = "1.0.5";
   console.info(`[shape_morph_faq] v${SCRIPT_VERSION} loaded`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
@@ -216,6 +216,7 @@ window.addEventListener("load", () => {
     let isAnimating = false;
     let animationStage = "idle";
     let animationRunId = 0;
+    const lerp = (a, b, t) => a + ((b - a) * t);
 
     function getIsOpen() {
       return (
@@ -226,11 +227,9 @@ window.addEventListener("load", () => {
       );
     }
 
-    function buildPathSet() {
+    function getPathMetrics() {
       const itemRect = accordionItem.getBoundingClientRect();
       const toggleRect = toggle.getBoundingClientRect();
-      const lerp = (a, b, t) => a + ((b - a) * t);
-
       const w = Math.max(80, Math.round(itemRect.width));
       const baseFrameH = Math.round(toggleRect.height + CONFIG.frameHeightPad);
       const h = Math.max(CONFIG.minFrameHeight, baseFrameH, Math.round(itemRect.height));
@@ -250,6 +249,17 @@ window.addEventListener("load", () => {
       const bodyAt = (t) => Math.round(
         closedBodyBottom + ((openBodyBottom - closedBodyBottom) * t)
       );
+
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      svg.setAttribute("preserveAspectRatio", "none");
+      svg.setAttribute("width", `${w}`);
+      svg.setAttribute("height", `${h}`);
+
+      return { w, h, bodyAt };
+    }
+
+    function buildPathSet() {
+      const { w, h, bodyAt } = getPathMetrics();
       const absorbT = 0.56;
       const absorbedRadius = Math.round(lerp(CONFIG.closed.radius, CONFIG.open.radius, 0.42));
       const absorbedTailWidth = Math.max(
@@ -262,11 +272,6 @@ window.addEventListener("load", () => {
       const absorbedTipNudgeX = Math.round(
         lerp(CONFIG.closed.tipNudgeX, CONFIG.open.tipNudgeX, absorbT)
       );
-
-      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-      svg.setAttribute("preserveAspectRatio", "none");
-      svg.setAttribute("width", `${w}`);
-      svg.setAttribute("height", `${h}`);
 
       return {
         closed: makeBubblePath(
@@ -353,6 +358,62 @@ window.addEventListener("load", () => {
       };
     }
 
+    function buildOpenResizePath(progress) {
+      const { w, h, bodyAt } = getPathMetrics();
+      const absorbT = 0.56;
+      const clampedProgress = Math.max(0, Math.min(1, progress));
+      const absorbedRadius = Math.round(lerp(CONFIG.closed.radius, CONFIG.open.radius, 0.42));
+      const absorbedTailWidth = Math.max(
+        6,
+        Math.round(lerp(CONFIG.closed.tailWidth, CONFIG.open.tailWidth, 0.24) * 0.2)
+      );
+      const absorbedTailOffsetX = Math.round(
+        lerp(CONFIG.closed.tailOffsetX, CONFIG.open.tailOffsetX, absorbT)
+      );
+      const absorbedTipNudgeX = Math.round(
+        lerp(CONFIG.closed.tipNudgeX, CONFIG.open.tipNudgeX, absorbT)
+      );
+
+      if (clampedProgress <= 0.5) {
+        const phaseT = clampedProgress / 0.5;
+        return makeBubblePath(
+          w, h,
+          lerp(CONFIG.closed.radius, absorbedRadius, phaseT),
+          lerp(CONFIG.closed.tailWidth, absorbedTailWidth, phaseT),
+          lerp(CONFIG.closed.tailHeight, 0.7, phaseT),
+          lerp(CONFIG.closed.tailOffsetX, absorbedTailOffsetX, phaseT),
+          lerp(CONFIG.closed.tailLeftRatio, 0.5, phaseT),
+          lerp(CONFIG.closed.tailRightRatio, 0.5, phaseT),
+          lerp(CONFIG.closed.tipNudgeX, absorbedTipNudgeX, phaseT),
+          0,
+          lerp(CONFIG.closed.tailCurveSkew, 0, phaseT),
+          bodyAt(absorbT * phaseT),
+          CONFIG.topInset,
+          CONFIG.sideInset,
+          CONFIG.bottomInset
+        );
+      }
+
+      const phaseT = (clampedProgress - 0.5) / 0.5;
+      return makeBubblePath(
+        w, h,
+        lerp(absorbedRadius, CONFIG.open.radius, phaseT),
+        lerp(absorbedTailWidth, 0, phaseT),
+        lerp(0.7, 0, phaseT),
+        lerp(absorbedTailOffsetX, CONFIG.open.tailOffsetX, phaseT),
+        0.5,
+        0.5,
+        lerp(absorbedTipNudgeX, 0, phaseT),
+        0,
+        0,
+        bodyAt(absorbT + ((1 - absorbT) * phaseT)),
+        CONFIG.topInset,
+        CONFIG.sideInset,
+        CONFIG.bottomInset,
+        lerp(2, 0, phaseT)
+      );
+    }
+
     function storePathSet(paths) {
       path.dataset.closed = paths.closed;
       path.dataset.absorbed = paths.absorbed;
@@ -432,11 +493,20 @@ window.addEventListener("load", () => {
       tl = gsap.timeline({ defaults: { overwrite: "auto" } });
 
       if (isOpen) {
-        const openResizeHalfDuration = 0.22;
+        const openResizeDuration = 0.44;
+        const openResizeState = { progress: 0 };
         animationStage = "open-resize";
+        path.setAttribute("d", buildOpenResizePath(0));
 
-        tl.to(path, morphStep(path.dataset.absorbed, openResizeHalfDuration, "sine.inOut"), 0)
-        .to(path, morphStep(path.dataset.openFlat, openResizeHalfDuration, "sine.inOut"), openResizeHalfDuration)
+        tl.to(openResizeState, {
+          duration: openResizeDuration,
+          progress: 1,
+          ease: "sine.inOut",
+          onUpdate: () => {
+            if (thisRunId !== animationRunId) return;
+            path.setAttribute("d", buildOpenResizePath(openResizeState.progress));
+          }
+        }, 0)
         .to(path, {
           duration: 0.22,
           fill: CONFIG.openFill,
