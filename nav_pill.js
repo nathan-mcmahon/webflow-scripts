@@ -1,6 +1,6 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.11.4";
-  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: classic-softened-arc-v2)`);
+  const SCRIPT_VERSION = "2026.03.11.5";
+  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-bridge-v1)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn(`[nav_pill] v${SCRIPT_VERSION} missing GSAP or MorphSVGPlugin.`);
@@ -25,6 +25,17 @@ window.addEventListener("load", () => {
     bubbleRightInsetRatio: 0.18,
     bubbleRightInsetMin: 1.5,
     bubbleRightInsetMax: 4,
+    // temporary S-curve bridge stage used during morph
+    liquidStageTailDepthRatio: 0.68,
+    liquidStageRightInsetBoost: 1.2,
+    liquidStageTailTipOffsetAdjust: -2,
+    liquidWaveRatio: 0.4,
+    liquidWaveMin: 1,
+    liquidWaveMax: 4,
+    liquidStageDurationEnter: 0.16,
+    liquidStageDurationExit: 0.15,
+    finalStageDurationEnter: 0.3,
+    finalStageDurationExit: 0.29,
     hoverScale: 1.04,
 
     // visual spacing around the body shape
@@ -125,11 +136,57 @@ window.addEventListener("load", () => {
     `.replace(/\s+/g, " ").trim();
   }
 
+  function makeLiquidWavePath(
+    w,
+    bodyH,
+    r,
+    tailHeight,
+    topInset,
+    sideInset,
+    tailGeometry,
+    liquidRightInset,
+    liquidWave
+  ) {
+    const left = sideInset;
+    const top = topInset;
+    const right = w - sideInset - liquidRightInset;
+    const bodyBottom = top + bodyH;
+    const { tailBaseLeft, tailBaseRight, tipX } = tailGeometry;
+    const tipY = bodyBottom + tailHeight;
+
+    const startY = top + r;
+    const endY = bodyBottom - r;
+    const sideSpan = Math.max(0, endY - startY);
+    const wave = clamp(liquidWave, 0, sideSpan * 0.45);
+
+    const cp1X = right + (wave * 0.18);
+    const cp1Y = startY + (sideSpan * 0.36);
+    const cp2X = right - (wave * 0.92);
+    const cp2Y = startY + (sideSpan * 0.72);
+
+    return `
+      M ${left + r} ${top}
+      H ${right - r}
+      Q ${right} ${top} ${right} ${startY}
+      C ${cp1X} ${cp1Y} ${cp2X} ${cp2Y} ${right} ${endY}
+      Q ${right} ${bodyBottom} ${right - r} ${bodyBottom}
+      H ${tailBaseRight}
+      L ${tipX} ${tipY}
+      L ${tailBaseLeft} ${bodyBottom}
+      H ${left + r}
+      Q ${left} ${bodyBottom} ${left} ${bodyBottom - r}
+      V ${top + r}
+      Q ${left} ${top} ${left + r} ${top}
+      Z
+    `.replace(/\s+/g, " ").trim();
+  }
+
   function setupPill(pill) {
     const svg = pill.querySelector(".pill-bg");
     const path = pill.querySelector(".pill-path");
     const label = pill.querySelector(".pill-label");
     if (!svg || !path || !label) return;
+    let morphTl = null;
 
     function measure() {
       const rect = pill.getBoundingClientRect();
@@ -167,8 +224,14 @@ window.addEventListener("load", () => {
         CONFIG.bubbleRightInsetMin,
         CONFIG.bubbleRightInsetMax
       );
+      const liquidRightInset = bubbleRightInset + CONFIG.liquidStageRightInsetBoost;
+      const liquidWave = clamp(
+        radius * CONFIG.liquidWaveRatio,
+        CONFIG.liquidWaveMin,
+        CONFIG.liquidWaveMax
+      );
 
-      const tailGeometry = getSoftBubbleTailGeometry(
+      const bubbleTailGeometry = getSoftBubbleTailGeometry(
         w,
         radius,
         CONFIG.tailWidth,
@@ -178,6 +241,17 @@ window.addEventListener("load", () => {
         CONFIG.rightCornerGuard,
         CONFIG.minTailSpan,
         bubbleRightInset
+      );
+      const liquidTailGeometry = getSoftBubbleTailGeometry(
+        w,
+        radius,
+        CONFIG.tailWidth,
+        CONFIG.tailOffsetX,
+        CONFIG.tailTipOffsetX + CONFIG.liquidStageTailTipOffsetAdjust,
+        CONFIG.sideInset,
+        CONFIG.rightCornerGuard,
+        CONFIG.minTailSpan,
+        liquidRightInset
       );
 
       svg.setAttribute("viewBox", `0 0 ${w} ${svgH}`);
@@ -197,12 +271,24 @@ window.addEventListener("load", () => {
         CONFIG.tailHeight,
         adjustedTopInset,
         CONFIG.sideInset,
-        tailGeometry,
+        bubbleTailGeometry,
         bubbleRightInset
+      );
+      const liquidD = makeLiquidWavePath(
+        w,
+        bodyH,
+        radius,
+        CONFIG.tailHeight * CONFIG.liquidStageTailDepthRatio,
+        adjustedTopInset,
+        CONFIG.sideInset,
+        liquidTailGeometry,
+        liquidRightInset,
+        liquidWave
       );
 
       path.setAttribute("d", pillD);
       path.dataset.pill = pillD;
+      path.dataset.liquid = liquidD;
       path.dataset.bubble = bubbleD;
     }
 
@@ -214,12 +300,21 @@ window.addEventListener("load", () => {
     ro.observe(pill);
 
     pill.addEventListener("mouseenter", () => {
-      gsap.to(path, {
-        duration: 0.48,
-        morphSVG: path.dataset.bubble,
-        ease: "sine.inOut",
-        overwrite: true
-      });
+      if (morphTl) morphTl.kill();
+      morphTl = gsap.timeline();
+      morphTl
+        .to(path, {
+          duration: CONFIG.liquidStageDurationEnter,
+          morphSVG: path.dataset.liquid,
+          ease: "sine.inOut",
+          overwrite: true
+        })
+        .to(path, {
+          duration: CONFIG.finalStageDurationEnter,
+          morphSVG: path.dataset.bubble,
+          ease: "sine.out",
+          overwrite: true
+        });
 
       gsap.to(pill, {
         duration: 0.25,
@@ -230,12 +325,21 @@ window.addEventListener("load", () => {
     });
 
     pill.addEventListener("mouseleave", () => {
-      gsap.to(path, {
-        duration: 0.44,
-        morphSVG: path.dataset.pill,
-        ease: "sine.inOut",
-        overwrite: true
-      });
+      if (morphTl) morphTl.kill();
+      morphTl = gsap.timeline();
+      morphTl
+        .to(path, {
+          duration: CONFIG.liquidStageDurationExit,
+          morphSVG: path.dataset.liquid,
+          ease: "sine.inOut",
+          overwrite: true
+        })
+        .to(path, {
+          duration: CONFIG.finalStageDurationExit,
+          morphSVG: path.dataset.pill,
+          ease: "sine.out",
+          overwrite: true
+        });
 
       gsap.to(pill, {
         duration: 0.25,

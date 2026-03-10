@@ -45,7 +45,7 @@ Notes:
 
 **Setup notes**
 - The script waits for `window.load`.
-- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: classic-softened-arc-v2)``.
+- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-bridge-v1)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
 - The SVG `viewBox` includes extra height for tail depth during morph.
 - Corner rounding is controlled by:
@@ -59,7 +59,13 @@ Notes:
 - Bubble right-side protrusion compensation is controlled by:
   - `bubbleRightInsetRatio` (inset amount derived from current radius)
   - `bubbleRightInsetMin` and `bubbleRightInsetMax` (bounds for that inset)
-- Hover/leave use direct string morph targets (`morphSVG: pathData`) with single-stage tweens and `sine.inOut` easing for a smoother fluid resize.
+- Intermediate S-wave bridge stage is controlled by:
+  - `liquidStageTailDepthRatio` (temporary tail depth in the bridge state)
+  - `liquidStageRightInsetBoost` (extra right inset during bridge state)
+  - `liquidStageTailTipOffsetAdjust` (temporary tip x adjustment during bridge)
+  - `liquidWaveRatio`, `liquidWaveMin`, `liquidWaveMax` (right-side S-wave amplitude)
+  - `liquidStageDurationEnter`, `liquidStageDurationExit`, `finalStageDurationEnter`, `finalStageDurationExit`
+- Hover/leave use direct string morph targets (`morphSVG: pathData`) in a two-step timeline (`pill -> liquid -> bubble` and reverse).
 - Current default values are tuned for a smaller ripple while retaining the liquid feel.
 
 **Assumptions**
