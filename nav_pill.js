@@ -77,7 +77,7 @@ window.addEventListener("load", () => {
     liquidStageDurationExit: 0.18,
     finalStageDurationExit: 0.27,
     // test knob to inspect path behavior in slow motion (1 = normal speed)
-    morphSlowMotionFactor: 1.2,
+    morphSlowMotionFactor: 2.0,
     hoverScale: 1.04,
 
     // visual spacing around the body shape
