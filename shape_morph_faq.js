@@ -51,7 +51,11 @@ window.addEventListener("load", () => {
     sideInset: 6,
     topInset: 8,
     bottomInset: 8,
-    openFill: "var(--neutral-light)"
+    openFill: "var(--neutral-light)",
+    textColors: {
+      closed: "var(--neutral-light)",
+      open: "var(--extra-dark-green)"
+    }
   };
 
   function makeBubblePath(
@@ -209,6 +213,9 @@ window.addEventListener("load", () => {
     const bubble = ensureBubbleForItem(accordionItem);
     const svg = bubble?.svg;
     const path = bubble?.path;
+    const textTargets = Array.from(
+      accordionItem.querySelectorAll(".question, .answer-text")
+    );
 
     if (!svg || !path) return;
     if (accordionItem.dataset.faqBubbleInit === "1") return;
@@ -440,11 +447,28 @@ window.addEventListener("load", () => {
       };
     }
 
+    function applyTextColor(isOpen) {
+      if (!textTargets.length) return;
+      gsap.set(textTargets, {
+        color: isOpen ? CONFIG.textColors.open : CONFIG.textColors.closed
+      });
+    }
+
+    function queueTextColorTween(timeline, isOpen, duration, position = 0) {
+      if (!textTargets.length) return;
+      timeline.to(textTargets, {
+        duration,
+        color: isOpen ? CONFIG.textColors.open : CONFIG.textColors.closed,
+        ease: "sine.out"
+      }, position);
+    }
+
     function applyStatic(isOpen) {
       const paths = buildPathSet();
       storePathSet(paths);
       path.setAttribute("d", isOpen ? paths.open : paths.closed);
       path.setAttribute("fill", isOpen ? CONFIG.openFill : "transparent");
+      applyTextColor(isOpen);
       gsap.set(svg, { scaleX: 1, scaleY: 1, transformOrigin: "50% 50%" });
     }
 
@@ -517,6 +541,7 @@ window.addEventListener("load", () => {
           fill: CONFIG.openFill,
           ease: "sine.out"
         }, 0.18);
+        queueTextColorTween(tl, true, 0.22, 0.12);
 
         tl.eventCallback("onComplete", () => {
           if (thisRunId !== animationRunId) return;
@@ -564,6 +589,7 @@ window.addEventListener("load", () => {
           fill: "transparent",
           ease: "sine.out"
         }, 0);
+        queueTextColorTween(tl, false, 0.2, 0);
         tl.eventCallback("onComplete", () => finishAnimation(false));
       }
     }

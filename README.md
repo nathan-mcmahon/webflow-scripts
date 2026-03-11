@@ -23,6 +23,8 @@ This repository contains standalone JavaScript snippets intended for use in Webf
   - Container per FAQ item: `.accordion-item`
   - Toggle inside each item: `.w-dropdown-toggle` or `.dropdown-toggle`
   - Answer/list inside each item: `.answer` or `.w-dropdown-list`
+  - Question text color target: `.question`
+  - Answer text color target: `.answer-text`
   - Open state classes observed: `.w--open` (Webflow-managed)
 - Recommended for the current visual integration:
   - `.faq-shell`
@@ -64,6 +66,7 @@ Notes:
 - Visual tuning values are in the top-level `CONFIG` object:
   - bubble radii, tail geometry, insets, min heights, open fill color.
   - open-only tail pop/overshoot controls under `openTailOvershoot`.
+  - open/closed text color variables under `textColors`.
 - Inline code comments in `CONFIG` mark the main future tuning points for:
   - closed-tail shape
   - open-tail shape
@@ -78,6 +81,8 @@ Notes:
   - subtle tail overshoot (`0.08s`) and settle (`0.16s`)
 - Current tuning uses a slightly stronger open-tail overshoot amplitude than previous revisions.
 - Open fill is configured as `var(--neutral-light)` and expects that CSS variable to be defined in Webflow/project styles.
+- On open, `.question` and `.answer-text` transition to `var(--extra-dark-green)`.
+- On close, `.question` and `.answer-text` return to `var(--neutral-light)`.
 - Close timing remains unchanged (`0.36s` total).
 - During active morph, resize updates still refresh geometry data so the top edge stays stable and does not snap upward at completion.
 - Add this CSS in the page/project `<head>` for wrapper layout and stroke styling:
