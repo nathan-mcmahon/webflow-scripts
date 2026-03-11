@@ -45,7 +45,7 @@ Notes:
 
 **Setup notes**
 - The script waits for `window.load`.
-- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v11-reverse-mouseout)``.
+- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v12-explicit-leave-speed)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
 - The SVG `viewBox` includes extra height for tail depth during morph.
 - Corner rounding is controlled by:
@@ -82,7 +82,8 @@ Notes:
   - `entrySqueezeDurationEnter`, `liquidStageDurationEnter`, `concaveStageDurationEnter`, `finalStageDurationEnter`, `finalCornerLiftDurationEnter`
 - Hover/leave use direct string morph targets (`morphSVG: pathData`) in a staged timeline (`pill -> squeeze -> liquid -> concave -> bubble -> bubbleCornerLift`, then exact reverse on leave).
 - Current defaults strongly exaggerate the mid-transition wave/concave stages for visual tuning, so you can dial values back after confirming the motion profile.
-- `morphSlowMotionFactor` scales all path-morph stage durations; current default is `3.0` (`1` is normal speed).
+- `morphSlowMotionFactor` scales hover-enter path-morph stage durations; current default is `3.0` (`1` is normal speed).
+- `morphSlowMotionFactorLeave` scales mouseleave path-morph stage durations; current default is `3.0`.
 
 **Assumptions**
 - `.nav-pill` integration CSS positions/overlays the SVG behind label content (for example using relative/absolute stacking and `pointer-events` handling).
