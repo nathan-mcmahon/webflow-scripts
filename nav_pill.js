@@ -1,6 +1,6 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.11.15";
-  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v9-slight-slowdown)`);
+  const SCRIPT_VERSION = "2026.03.11.16";
+  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v10-slightly-slower)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn(`[nav_pill] v${SCRIPT_VERSION} missing GSAP or MorphSVGPlugin.`);
@@ -77,7 +77,7 @@ window.addEventListener("load", () => {
     liquidStageDurationExit: 0.18,
     finalStageDurationExit: 0.27,
     // test knob to inspect path behavior in slow motion (1 = normal speed)
-    morphSlowMotionFactor: 1.12,
+    morphSlowMotionFactor: 1.2,
     hoverScale: 1.04,
 
     // visual spacing around the body shape
