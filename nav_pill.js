@@ -1,6 +1,6 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.11.17";
-  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v10-slightly-slower)`);
+  const SCRIPT_VERSION = "2026.03.11.18";
+  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v11-reverse-mouseout)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn(`[nav_pill] v${SCRIPT_VERSION} missing GSAP or MorphSVGPlugin.`);
@@ -73,9 +73,6 @@ window.addEventListener("load", () => {
     concaveStageDurationEnter: 0.14,
     finalStageDurationEnter: 0.24,
     finalCornerLiftDurationEnter: 0.1,
-    concaveStageDurationExit: 0.14,
-    liquidStageDurationExit: 0.18,
-    finalStageDurationExit: 0.27,
     // test knob to inspect path behavior in slow motion (1 = normal speed)
     morphSlowMotionFactor: 3.0,
     hoverScale: 1.04,
@@ -624,19 +621,31 @@ window.addEventListener("load", () => {
       morphTl = gsap.timeline();
       morphTl
         .to(path, {
-          duration: morphDuration(CONFIG.concaveStageDurationExit, CONFIG.morphSlowMotionFactor),
+          duration: morphDuration(CONFIG.finalCornerLiftDurationEnter, CONFIG.morphSlowMotionFactor),
+          morphSVG: path.dataset.bubble,
+          ease: "sine.inOut",
+          overwrite: true
+        })
+        .to(path, {
+          duration: morphDuration(CONFIG.finalStageDurationEnter, CONFIG.morphSlowMotionFactor),
           morphSVG: path.dataset.concave,
           ease: "sine.inOut",
           overwrite: true
         })
         .to(path, {
-          duration: morphDuration(CONFIG.liquidStageDurationExit, CONFIG.morphSlowMotionFactor),
+          duration: morphDuration(CONFIG.concaveStageDurationEnter, CONFIG.morphSlowMotionFactor),
           morphSVG: path.dataset.liquid,
           ease: "sine.inOut",
           overwrite: true
         })
         .to(path, {
-          duration: morphDuration(CONFIG.finalStageDurationExit, CONFIG.morphSlowMotionFactor),
+          duration: morphDuration(CONFIG.liquidStageDurationEnter, CONFIG.morphSlowMotionFactor),
+          morphSVG: path.dataset.squeeze,
+          ease: "sine.inOut",
+          overwrite: true
+        })
+        .to(path, {
+          duration: morphDuration(CONFIG.entrySqueezeDurationEnter, CONFIG.morphSlowMotionFactor),
           morphSVG: path.dataset.pill,
           ease: "sine.out",
           overwrite: true
