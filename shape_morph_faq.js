@@ -51,7 +51,7 @@ window.addEventListener("load", () => {
     sideInset: 6,
     topInset: 8,
     bottomInset: 8,
-    openFill: "#d5ff87"
+    openFill: "var(--neutral-light)"
   };
 
   function makeBubblePath(
