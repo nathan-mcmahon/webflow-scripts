@@ -45,7 +45,7 @@ Notes:
 
 **Setup notes**
 - The script waits for `window.load`.
-- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v6-entry-squeeze)``.
+- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v7-hard-radius-drop)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
 - The SVG `viewBox` includes extra height for tail depth during morph.
 - Corner rounding is controlled by:
@@ -60,7 +60,7 @@ Notes:
   - `bubbleRightInsetRatio` (inset amount derived from current radius)
   - `bubbleRightInsetMin` and `bubbleRightInsetMax` (bounds for that inset)
 - Entry squeeze stage (first hover stage) is controlled by:
-  - `entrySqueezeStageRadiusRatio` (dramatically reduces radius right at morph start)
+  - `entrySqueezeStageRadiusRatio` (immediately drops radius at morph start)
   - `entrySqueezeStageTailDepthRatio`, `entrySqueezeStageRightInsetBoost`, `entrySqueezeStageTailTipOffsetAdjust`
   - `entrySqueezeWaveRatio`, `entrySqueezeWaveMin`, `entrySqueezeWaveMax`
   - `entrySqueezeWaveInFactor1`, `entrySqueezeWaveInFactor2` (inward concave pull strength)
@@ -76,7 +76,7 @@ Notes:
   - `concaveStageTailDepthRatio`, `concaveStageRadiusRatio`, `concaveStageRightInsetBoost`, `concaveStageTailTipOffsetAdjust`
   - `concaveWaveRatio`, `concaveWaveMin`, `concaveWaveMax`
   - `concaveWaveInFactor1`, `concaveWaveInFactor2` (inward pull strength before settle)
-  - `bubbleStageRadiusRatio`, `stageRadiusMinPx` (final-stage radius restore + lower radius bound)
+  - `bubbleStageRadiusRatio`, `stageRadiusMinPx` (keeps the final bubble stage at a reduced radius and sets lower radius bound)
   - `morphWaveMinSideSpanRatio`, `morphWaveMinSideSpanPx` (ensures wave stages stay visible when radius is capsule-like)
   - `entrySqueezeDurationEnter`, `liquidStageDurationEnter`, `concaveStageDurationEnter`, `finalStageDurationEnter`
   - `concaveStageDurationExit`, `liquidStageDurationExit`, `finalStageDurationExit`

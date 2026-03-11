@@ -1,6 +1,6 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.11.12";
-  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v6-entry-squeeze)`);
+  const SCRIPT_VERSION = "2026.03.11.13";
+  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v7-hard-radius-drop)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn(`[nav_pill] v${SCRIPT_VERSION} missing GSAP or MorphSVGPlugin.`);
@@ -48,11 +48,11 @@ window.addEventListener("load", () => {
     liquidWaveMaxOutwardPx: 1.1,
     waveRightEnvelopeInsetPx: 0.8,
     // intentionally shrink corner radius during early stages, then restore by settle
-    entrySqueezeStageRadiusRatio: 0.2,
-    liquidStageRadiusRatio: 0.34,
-    concaveStageRadiusRatio: 0.68,
-    bubbleStageRadiusRatio: 1,
-    stageRadiusMinPx: 5,
+    entrySqueezeStageRadiusRatio: 0.08,
+    liquidStageRadiusRatio: 0.28,
+    concaveStageRadiusRatio: 0.5,
+    bubbleStageRadiusRatio: 0.58,
+    stageRadiusMinPx: 2,
     // quick concave brake stage just before settle
     concaveStageTailDepthRatio: 0.96,
     concaveStageRightInsetBoost: 0.9,
@@ -66,7 +66,7 @@ window.addEventListener("load", () => {
     // force a small transition span so S/concave stages are visually expressed
     morphWaveMinSideSpanRatio: 0.34,
     morphWaveMinSideSpanPx: 10,
-    entrySqueezeDurationEnter: 0.14,
+    entrySqueezeDurationEnter: 0.03,
     liquidStageDurationEnter: 0.2,
     concaveStageDurationEnter: 0.14,
     finalStageDurationEnter: 0.24,
@@ -74,7 +74,7 @@ window.addEventListener("load", () => {
     liquidStageDurationExit: 0.18,
     finalStageDurationExit: 0.27,
     // test knob to inspect path behavior in slow motion (1 = normal speed)
-    morphSlowMotionFactor: 2.8,
+    morphSlowMotionFactor: 1,
     hoverScale: 1.04,
 
     // visual spacing around the body shape
