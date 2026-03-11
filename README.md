@@ -45,7 +45,7 @@ Notes:
 
 **Setup notes**
 - The script waits for `window.load`.
-- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v4-bulge-guard)``.
+- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v6-entry-squeeze)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
 - The SVG `viewBox` includes extra height for tail depth during morph.
 - Corner rounding is controlled by:
@@ -59,21 +59,28 @@ Notes:
 - Bubble right-side protrusion compensation is controlled by:
   - `bubbleRightInsetRatio` (inset amount derived from current radius)
   - `bubbleRightInsetMin` and `bubbleRightInsetMax` (bounds for that inset)
+- Entry squeeze stage (first hover stage) is controlled by:
+  - `entrySqueezeStageRadiusRatio` (dramatically reduces radius right at morph start)
+  - `entrySqueezeStageTailDepthRatio`, `entrySqueezeStageRightInsetBoost`, `entrySqueezeStageTailTipOffsetAdjust`
+  - `entrySqueezeWaveRatio`, `entrySqueezeWaveMin`, `entrySqueezeWaveMax`
+  - `entrySqueezeWaveInFactor1`, `entrySqueezeWaveInFactor2` (inward concave pull strength)
 - Intermediate S-wave bridge stage is controlled by:
   - `liquidStageTailDepthRatio` (temporary tail depth in the bridge state)
+  - `liquidStageRadiusRatio` (partially restores radius after entry squeeze)
   - `liquidStageRightInsetBoost` (extra right inset during bridge state)
   - `liquidStageTailTipOffsetAdjust` (temporary tip x adjustment during bridge)
   - `liquidWaveRatio`, `liquidWaveMin`, `liquidWaveMax` (S-wave amplitude)
   - `liquidWaveOutFactor`, `liquidWaveInFactor` (how strongly the S-wave bows out/in)
   - `liquidWaveMaxOutwardPx`, `waveRightEnvelopeInsetPx` (caps convex overshoot to prevent harsh bulge)
 - Concave settle stage is controlled by:
-  - `concaveStageTailDepthRatio`, `concaveStageRightInsetBoost`, `concaveStageTailTipOffsetAdjust`
+  - `concaveStageTailDepthRatio`, `concaveStageRadiusRatio`, `concaveStageRightInsetBoost`, `concaveStageTailTipOffsetAdjust`
   - `concaveWaveRatio`, `concaveWaveMin`, `concaveWaveMax`
   - `concaveWaveInFactor1`, `concaveWaveInFactor2` (inward pull strength before settle)
+  - `bubbleStageRadiusRatio`, `stageRadiusMinPx` (final-stage radius restore + lower radius bound)
   - `morphWaveMinSideSpanRatio`, `morphWaveMinSideSpanPx` (ensures wave stages stay visible when radius is capsule-like)
-  - `liquidStageDurationEnter`, `concaveStageDurationEnter`, `finalStageDurationEnter`
+  - `entrySqueezeDurationEnter`, `liquidStageDurationEnter`, `concaveStageDurationEnter`, `finalStageDurationEnter`
   - `concaveStageDurationExit`, `liquidStageDurationExit`, `finalStageDurationExit`
-- Hover/leave use direct string morph targets (`morphSVG: pathData`) in a staged timeline (`pill -> liquid -> concave -> bubble` and reverse).
+- Hover/leave use direct string morph targets (`morphSVG: pathData`) in a staged timeline (`pill -> squeeze -> liquid -> concave -> bubble` and reverse).
 - Current defaults strongly exaggerate the mid-transition wave/concave stages for visual tuning, so you can dial values back after confirming the motion profile.
 - `morphSlowMotionFactor` scales all path-morph stage durations; set to `1` to return to normal speed.
 

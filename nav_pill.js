@@ -1,6 +1,6 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.11.10";
-  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v4-bulge-guard)`);
+  const SCRIPT_VERSION = "2026.03.11.12";
+  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v6-entry-squeeze)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn(`[nav_pill] v${SCRIPT_VERSION} missing GSAP or MorphSVGPlugin.`);
@@ -25,6 +25,16 @@ window.addEventListener("load", () => {
     bubbleRightInsetRatio: 0.18,
     bubbleRightInsetMin: 1.5,
     bubbleRightInsetMax: 4,
+    // entry squeeze stage: sharply reduce corner radius and pull right edge inward
+    // at morph start, then progressively restore roundness.
+    entrySqueezeStageTailDepthRatio: 0.74,
+    entrySqueezeStageRightInsetBoost: 1.4,
+    entrySqueezeStageTailTipOffsetAdjust: -7,
+    entrySqueezeWaveRatio: 1.4,
+    entrySqueezeWaveMin: 8,
+    entrySqueezeWaveMax: 24,
+    entrySqueezeWaveInFactor1: 1.55,
+    entrySqueezeWaveInFactor2: 3.6,
     // temporary S-curve bridge stage used during morph
     liquidStageTailDepthRatio: 0.74,
     liquidStageRightInsetBoost: 0.5,
@@ -37,6 +47,12 @@ window.addEventListener("load", () => {
     // cap convex overshoot so liquid stage stays wavy without hard bulge
     liquidWaveMaxOutwardPx: 1.1,
     waveRightEnvelopeInsetPx: 0.8,
+    // intentionally shrink corner radius during early stages, then restore by settle
+    entrySqueezeStageRadiusRatio: 0.2,
+    liquidStageRadiusRatio: 0.34,
+    concaveStageRadiusRatio: 0.68,
+    bubbleStageRadiusRatio: 1,
+    stageRadiusMinPx: 5,
     // quick concave brake stage just before settle
     concaveStageTailDepthRatio: 0.96,
     concaveStageRightInsetBoost: 0.9,
@@ -50,6 +66,7 @@ window.addEventListener("load", () => {
     // force a small transition span so S/concave stages are visually expressed
     morphWaveMinSideSpanRatio: 0.34,
     morphWaveMinSideSpanPx: 10,
+    entrySqueezeDurationEnter: 0.14,
     liquidStageDurationEnter: 0.2,
     concaveStageDurationEnter: 0.14,
     finalStageDurationEnter: 0.24,
@@ -75,6 +92,16 @@ window.addEventListener("load", () => {
 
   function morphDuration(baseSeconds, slowFactor) {
     return baseSeconds * slowFactor;
+  }
+
+  function resolveStageRadius(baseRadius, radiusRatio, bodyH, width, sideInset, rightInset, minRadiusPx) {
+    const left = sideInset;
+    const right = width - sideInset - rightInset;
+    const maxByHeight = bodyH / 2;
+    const maxByWidth = (right - left) / 2;
+    const stageMax = Math.max(0, Math.min(maxByHeight, maxByWidth));
+    const desired = baseRadius * radiusRatio;
+    return clamp(desired, Math.min(minRadiusPx, stageMax), stageMax);
   }
 
   function makePillPath(w, bodyH, r, topInset, sideInset) {
@@ -337,20 +364,73 @@ window.addEventListener("load", () => {
       );
       const liquidRightInset = bubbleRightInset + CONFIG.liquidStageRightInsetBoost;
       const concaveRightInset = bubbleRightInset + CONFIG.concaveStageRightInsetBoost;
+      const entrySqueezeRightInset = bubbleRightInset + CONFIG.entrySqueezeStageRightInsetBoost;
       const liquidWave = clamp(
         radius * CONFIG.liquidWaveRatio,
         CONFIG.liquidWaveMin,
         CONFIG.liquidWaveMax
+      );
+      const entrySqueezeWave = clamp(
+        radius * CONFIG.entrySqueezeWaveRatio,
+        CONFIG.entrySqueezeWaveMin,
+        CONFIG.entrySqueezeWaveMax
       );
       const concaveWave = clamp(
         radius * CONFIG.concaveWaveRatio,
         CONFIG.concaveWaveMin,
         CONFIG.concaveWaveMax
       );
+      const entrySqueezeStageRadius = resolveStageRadius(
+        radius,
+        CONFIG.entrySqueezeStageRadiusRatio,
+        bodyH,
+        w,
+        CONFIG.sideInset,
+        entrySqueezeRightInset,
+        CONFIG.stageRadiusMinPx
+      );
+      const bubbleStageRadius = resolveStageRadius(
+        radius,
+        CONFIG.bubbleStageRadiusRatio,
+        bodyH,
+        w,
+        CONFIG.sideInset,
+        bubbleRightInset,
+        CONFIG.stageRadiusMinPx
+      );
+      const liquidStageRadius = resolveStageRadius(
+        radius,
+        CONFIG.liquidStageRadiusRatio,
+        bodyH,
+        w,
+        CONFIG.sideInset,
+        liquidRightInset,
+        CONFIG.stageRadiusMinPx
+      );
+      const concaveStageRadius = resolveStageRadius(
+        radius,
+        CONFIG.concaveStageRadiusRatio,
+        bodyH,
+        w,
+        CONFIG.sideInset,
+        concaveRightInset,
+        CONFIG.stageRadiusMinPx
+      );
 
+      const entrySqueezeTailGeometry = getSoftBubbleTailGeometry(
+        w,
+        entrySqueezeStageRadius,
+        CONFIG.tailWidth,
+        CONFIG.tailOffsetX,
+        CONFIG.tailTipOffsetX + CONFIG.entrySqueezeStageTailTipOffsetAdjust,
+        CONFIG.sideInset,
+        CONFIG.rightCornerGuard,
+        CONFIG.minTailSpan,
+        entrySqueezeRightInset
+      );
       const bubbleTailGeometry = getSoftBubbleTailGeometry(
         w,
-        radius,
+        bubbleStageRadius,
         CONFIG.tailWidth,
         CONFIG.tailOffsetX,
         CONFIG.tailTipOffsetX,
@@ -361,7 +441,7 @@ window.addEventListener("load", () => {
       );
       const liquidTailGeometry = getSoftBubbleTailGeometry(
         w,
-        radius,
+        liquidStageRadius,
         CONFIG.tailWidth,
         CONFIG.tailOffsetX,
         CONFIG.tailTipOffsetX + CONFIG.liquidStageTailTipOffsetAdjust,
@@ -372,7 +452,7 @@ window.addEventListener("load", () => {
       );
       const concaveTailGeometry = getSoftBubbleTailGeometry(
         w,
-        radius,
+        concaveStageRadius,
         CONFIG.tailWidth,
         CONFIG.tailOffsetX,
         CONFIG.tailTipOffsetX + CONFIG.concaveStageTailTipOffsetAdjust,
@@ -395,17 +475,31 @@ window.addEventListener("load", () => {
       const bubbleD = makeBubblePath(
         w,
         bodyH,
-        radius,
+        bubbleStageRadius,
         CONFIG.tailHeight,
         adjustedTopInset,
         CONFIG.sideInset,
         bubbleTailGeometry,
         bubbleRightInset
       );
+      const squeezeD = makeConcaveSettlePath(
+        w,
+        bodyH,
+        entrySqueezeStageRadius,
+        CONFIG.tailHeight * CONFIG.entrySqueezeStageTailDepthRatio,
+        adjustedTopInset,
+        CONFIG.sideInset,
+        entrySqueezeTailGeometry,
+        entrySqueezeRightInset,
+        entrySqueezeWave,
+        CONFIG.entrySqueezeWaveInFactor1,
+        CONFIG.entrySqueezeWaveInFactor2,
+        minWaveSideSpan
+      );
       const liquidD = makeLiquidWavePath(
         w,
         bodyH,
-        radius,
+        liquidStageRadius,
         CONFIG.tailHeight * CONFIG.liquidStageTailDepthRatio,
         adjustedTopInset,
         CONFIG.sideInset,
@@ -421,7 +515,7 @@ window.addEventListener("load", () => {
       const concaveD = makeConcaveSettlePath(
         w,
         bodyH,
-        radius,
+        concaveStageRadius,
         CONFIG.tailHeight * CONFIG.concaveStageTailDepthRatio,
         adjustedTopInset,
         CONFIG.sideInset,
@@ -435,6 +529,7 @@ window.addEventListener("load", () => {
 
       path.setAttribute("d", pillD);
       path.dataset.pill = pillD;
+      path.dataset.squeeze = squeezeD;
       path.dataset.liquid = liquidD;
       path.dataset.concave = concaveD;
       path.dataset.bubble = bubbleD;
@@ -451,6 +546,12 @@ window.addEventListener("load", () => {
       if (morphTl) morphTl.kill();
       morphTl = gsap.timeline();
       morphTl
+        .to(path, {
+          duration: morphDuration(CONFIG.entrySqueezeDurationEnter, CONFIG.morphSlowMotionFactor),
+          morphSVG: path.dataset.squeeze,
+          ease: "sine.inOut",
+          overwrite: true
+        })
         .to(path, {
           duration: morphDuration(CONFIG.liquidStageDurationEnter, CONFIG.morphSlowMotionFactor),
           morphSVG: path.dataset.liquid,
