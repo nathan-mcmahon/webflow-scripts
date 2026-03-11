@@ -1,6 +1,6 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.11.13";
-  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v7-hard-radius-drop)`);
+  const SCRIPT_VERSION = "2026.03.11.14";
+  console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v8-final-corner-lift)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
     console.warn(`[nav_pill] v${SCRIPT_VERSION} missing GSAP or MorphSVGPlugin.`);
@@ -52,6 +52,8 @@ window.addEventListener("load", () => {
     liquidStageRadiusRatio: 0.28,
     concaveStageRadiusRatio: 0.5,
     bubbleStageRadiusRatio: 0.58,
+    // final hover endpoint: round corners up slightly after bubble fully forms
+    finalCornerLiftStageRadiusRatio: 0.76,
     stageRadiusMinPx: 2,
     // quick concave brake stage just before settle
     concaveStageTailDepthRatio: 0.96,
@@ -70,6 +72,7 @@ window.addEventListener("load", () => {
     liquidStageDurationEnter: 0.2,
     concaveStageDurationEnter: 0.14,
     finalStageDurationEnter: 0.24,
+    finalCornerLiftDurationEnter: 0.1,
     concaveStageDurationExit: 0.14,
     liquidStageDurationExit: 0.18,
     finalStageDurationExit: 0.27,
@@ -398,6 +401,15 @@ window.addEventListener("load", () => {
         bubbleRightInset,
         CONFIG.stageRadiusMinPx
       );
+      const finalCornerLiftStageRadius = resolveStageRadius(
+        radius,
+        CONFIG.finalCornerLiftStageRadiusRatio,
+        bodyH,
+        w,
+        CONFIG.sideInset,
+        bubbleRightInset,
+        CONFIG.stageRadiusMinPx
+      );
       const liquidStageRadius = resolveStageRadius(
         radius,
         CONFIG.liquidStageRadiusRatio,
@@ -431,6 +443,17 @@ window.addEventListener("load", () => {
       const bubbleTailGeometry = getSoftBubbleTailGeometry(
         w,
         bubbleStageRadius,
+        CONFIG.tailWidth,
+        CONFIG.tailOffsetX,
+        CONFIG.tailTipOffsetX,
+        CONFIG.sideInset,
+        CONFIG.rightCornerGuard,
+        CONFIG.minTailSpan,
+        bubbleRightInset
+      );
+      const finalCornerLiftTailGeometry = getSoftBubbleTailGeometry(
+        w,
+        finalCornerLiftStageRadius,
         CONFIG.tailWidth,
         CONFIG.tailOffsetX,
         CONFIG.tailTipOffsetX,
@@ -480,6 +503,16 @@ window.addEventListener("load", () => {
         adjustedTopInset,
         CONFIG.sideInset,
         bubbleTailGeometry,
+        bubbleRightInset
+      );
+      const bubbleCornerLiftD = makeBubblePath(
+        w,
+        bodyH,
+        finalCornerLiftStageRadius,
+        CONFIG.tailHeight,
+        adjustedTopInset,
+        CONFIG.sideInset,
+        finalCornerLiftTailGeometry,
         bubbleRightInset
       );
       const squeezeD = makeConcaveSettlePath(
@@ -533,6 +566,7 @@ window.addEventListener("load", () => {
       path.dataset.liquid = liquidD;
       path.dataset.concave = concaveD;
       path.dataset.bubble = bubbleD;
+      path.dataset.bubbleCornerLift = bubbleCornerLiftD;
     }
 
     buildPaths();
@@ -567,6 +601,12 @@ window.addEventListener("load", () => {
         .to(path, {
           duration: morphDuration(CONFIG.finalStageDurationEnter, CONFIG.morphSlowMotionFactor),
           morphSVG: path.dataset.bubble,
+          ease: "sine.out",
+          overwrite: true
+        })
+        .to(path, {
+          duration: morphDuration(CONFIG.finalCornerLiftDurationEnter, CONFIG.morphSlowMotionFactor),
+          morphSVG: path.dataset.bubbleCornerLift,
           ease: "sine.out",
           overwrite: true
         });

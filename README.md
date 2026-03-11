@@ -45,7 +45,7 @@ Notes:
 
 **Setup notes**
 - The script waits for `window.load`.
-- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v7-hard-radius-drop)``.
+- On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v8-final-corner-lift)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
 - The SVG `viewBox` includes extra height for tail depth during morph.
 - Corner rounding is controlled by:
@@ -77,10 +77,11 @@ Notes:
   - `concaveWaveRatio`, `concaveWaveMin`, `concaveWaveMax`
   - `concaveWaveInFactor1`, `concaveWaveInFactor2` (inward pull strength before settle)
   - `bubbleStageRadiusRatio`, `stageRadiusMinPx` (keeps the final bubble stage at a reduced radius and sets lower radius bound)
+  - `finalCornerLiftStageRadiusRatio`, `finalCornerLiftDurationEnter` (adds a final, slight corner-round increase only after hover morph reaches bubble endpoint)
   - `morphWaveMinSideSpanRatio`, `morphWaveMinSideSpanPx` (ensures wave stages stay visible when radius is capsule-like)
   - `entrySqueezeDurationEnter`, `liquidStageDurationEnter`, `concaveStageDurationEnter`, `finalStageDurationEnter`
   - `concaveStageDurationExit`, `liquidStageDurationExit`, `finalStageDurationExit`
-- Hover/leave use direct string morph targets (`morphSVG: pathData`) in a staged timeline (`pill -> squeeze -> liquid -> concave -> bubble` and reverse).
+- Hover/leave use direct string morph targets (`morphSVG: pathData`) in a staged timeline (`pill -> squeeze -> liquid -> concave -> bubble -> bubbleCornerLift` and reverse).
 - Current defaults strongly exaggerate the mid-transition wave/concave stages for visual tuning, so you can dial values back after confirming the motion profile.
 - `morphSlowMotionFactor` scales all path-morph stage durations; set to `1` to return to normal speed.
 
