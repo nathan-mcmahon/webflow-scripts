@@ -1,5 +1,5 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.11.16";
+  const SCRIPT_VERSION = "2026.03.11.17";
   console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v10-slightly-slower)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
@@ -77,7 +77,7 @@ window.addEventListener("load", () => {
     liquidStageDurationExit: 0.18,
     finalStageDurationExit: 0.27,
     // test knob to inspect path behavior in slow motion (1 = normal speed)
-    morphSlowMotionFactor: 2.0,
+    morphSlowMotionFactor: 3.0,
     hoverScale: 1.04,
 
     // visual spacing around the body shape
