@@ -75,7 +75,7 @@ window.addEventListener("load", () => {
     finalCornerLiftDurationEnter: 0.1,
     // test knobs to inspect path behavior in slow motion (1 = normal speed)
     morphSlowMotionFactor: 3.0,
-    morphSlowMotionFactorLeave: 3.0,
+    morphSlowMotionFactorLeave: 5.0,
     hoverScale: 1.04,
 
     // visual spacing around the body shape
