@@ -80,8 +80,8 @@ window.addEventListener("load", () => {
 
     // visual spacing around the body shape
     sideInset: 0,
-    topInset: 10,
-    bottomInset: 10,
+    topInset: 0,
+    bottomInset: 0,
 
     // keeps the body centered in the taller SVG canvas
     tailCenterCompensation: 0.3
