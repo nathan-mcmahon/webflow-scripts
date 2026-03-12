@@ -78,6 +78,15 @@ window.addEventListener("load", () => {
     morphSlowMotionFactorLeave: 10.0,
     hoverScale: 1.04,
 
+    // extra drawable area around the pill so hover morph stages can extend
+    // outside the wrapper without shrinking the base outline
+    overflowPadXRatio: 0.06,
+    overflowPadXMin: 6,
+    overflowPadTopRatio: 0.04,
+    overflowPadTopMin: 2,
+    overflowPadBottomRatio: 0.85,
+    overflowPadBottomMin: 30,
+
     // visual spacing around the body shape
     sideInset: 0,
     topInset: 0,
@@ -323,25 +332,40 @@ window.addEventListener("load", () => {
     function measure() {
       const rect = pill.getBoundingClientRect();
 
-      const w = Math.max(1, rect.width);
-      const visibleH = Math.max(1, rect.height);
+      const pillW = Math.max(1, rect.width);
+      const pillH = Math.max(1, rect.height);
 
-      return { w, visibleH };
+      return { pillW, pillH };
     }
 
     function buildPaths() {
-      const { w, visibleH } = measure();
+      const { pillW, pillH } = measure();
+      const overflowPadX = Math.max(
+        CONFIG.overflowPadXMin,
+        pillW * CONFIG.overflowPadXRatio
+      );
+      const overflowPadTop = Math.max(
+        CONFIG.overflowPadTopMin,
+        pillH * CONFIG.overflowPadTopRatio
+      );
+      const overflowPadBottom = Math.max(
+        CONFIG.overflowPadBottomMin,
+        pillH * CONFIG.overflowPadBottomRatio
+      );
+      const w = pillW + (overflowPadX * 2);
+      const svgH = pillH + overflowPadTop + overflowPadBottom;
+      const sideInset = overflowPadX + CONFIG.sideInset;
 
       // fixed body height, regardless of tail height
-      const bodyH = visibleH - CONFIG.topInset - CONFIG.bottomInset;
+      const bodyH = pillH - CONFIG.topInset - CONFIG.bottomInset;
 
-      // Keep the resting pill aligned to the rendered .nav-pill box.
-      // The hover tail renders outside that box via SVG overflow.
-      const adjustedTopInset = CONFIG.topInset;
+      // Map the resting pill directly to the .nav-pill box, but place it inside
+      // a larger SVG so hover morph stages have room to extend past the wrapper.
+      const adjustedTopInset = overflowPadTop + CONFIG.topInset;
 
       const maxRadius = Math.min(
         bodyH / 2,
-        (w - (CONFIG.sideInset * 2)) / 2
+        (w - (sideInset * 2)) / 2
       );
       const radius = Math.min(
         maxRadius,
@@ -379,7 +403,7 @@ window.addEventListener("load", () => {
         CONFIG.entrySqueezeStageRadiusRatio,
         bodyH,
         w,
-        CONFIG.sideInset,
+        sideInset,
         entrySqueezeRightInset,
         CONFIG.stageRadiusMinPx
       );
@@ -388,7 +412,7 @@ window.addEventListener("load", () => {
         CONFIG.bubbleStageRadiusRatio,
         bodyH,
         w,
-        CONFIG.sideInset,
+        sideInset,
         bubbleRightInset,
         CONFIG.stageRadiusMinPx
       );
@@ -397,7 +421,7 @@ window.addEventListener("load", () => {
         CONFIG.finalCornerLiftStageRadiusRatio,
         bodyH,
         w,
-        CONFIG.sideInset,
+        sideInset,
         bubbleRightInset,
         CONFIG.stageRadiusMinPx
       );
@@ -406,7 +430,7 @@ window.addEventListener("load", () => {
         CONFIG.liquidStageRadiusRatio,
         bodyH,
         w,
-        CONFIG.sideInset,
+        sideInset,
         liquidRightInset,
         CONFIG.stageRadiusMinPx
       );
@@ -415,7 +439,7 @@ window.addEventListener("load", () => {
         CONFIG.concaveStageRadiusRatio,
         bodyH,
         w,
-        CONFIG.sideInset,
+        sideInset,
         concaveRightInset,
         CONFIG.stageRadiusMinPx
       );
@@ -426,7 +450,7 @@ window.addEventListener("load", () => {
         CONFIG.tailWidth,
         CONFIG.tailOffsetX,
         CONFIG.tailTipOffsetX + CONFIG.entrySqueezeStageTailTipOffsetAdjust,
-        CONFIG.sideInset,
+        sideInset,
         CONFIG.rightCornerGuard,
         CONFIG.minTailSpan,
         entrySqueezeRightInset
@@ -437,7 +461,7 @@ window.addEventListener("load", () => {
         CONFIG.tailWidth,
         CONFIG.tailOffsetX,
         CONFIG.tailTipOffsetX,
-        CONFIG.sideInset,
+        sideInset,
         CONFIG.rightCornerGuard,
         CONFIG.minTailSpan,
         bubbleRightInset
@@ -448,7 +472,7 @@ window.addEventListener("load", () => {
         CONFIG.tailWidth,
         CONFIG.tailOffsetX,
         CONFIG.tailTipOffsetX,
-        CONFIG.sideInset,
+        sideInset,
         CONFIG.rightCornerGuard,
         CONFIG.minTailSpan,
         bubbleRightInset
@@ -459,7 +483,7 @@ window.addEventListener("load", () => {
         CONFIG.tailWidth,
         CONFIG.tailOffsetX,
         CONFIG.tailTipOffsetX + CONFIG.liquidStageTailTipOffsetAdjust,
-        CONFIG.sideInset,
+        sideInset,
         CONFIG.rightCornerGuard,
         CONFIG.minTailSpan,
         liquidRightInset
@@ -470,24 +494,30 @@ window.addEventListener("load", () => {
         CONFIG.tailWidth,
         CONFIG.tailOffsetX,
         CONFIG.tailTipOffsetX + CONFIG.concaveStageTailTipOffsetAdjust,
-        CONFIG.sideInset,
+        sideInset,
         CONFIG.rightCornerGuard,
         CONFIG.minTailSpan,
         concaveRightInset
       );
 
-      svg.setAttribute("viewBox", `0 0 ${w} ${visibleH}`);
+      svg.setAttribute("viewBox", `0 0 ${w} ${svgH}`);
       svg.setAttribute("preserveAspectRatio", "none");
       svg.setAttribute("width", `${w}`);
-      svg.setAttribute("height", `${visibleH}`);
+      svg.setAttribute("height", `${svgH}`);
       svg.setAttribute("overflow", "visible");
+      svg.style.width = `${w}px`;
+      svg.style.height = `${svgH}px`;
+      svg.style.left = `${-overflowPadX}px`;
+      svg.style.top = `${-overflowPadTop}px`;
+      svg.style.maxWidth = "none";
+      svg.style.overflow = "visible";
 
       const pillD = makePillPath(
         w,
         bodyH,
         radius,
         adjustedTopInset,
-        CONFIG.sideInset
+        sideInset
       );
 
       const bubbleD = makeBubblePath(
@@ -496,7 +526,7 @@ window.addEventListener("load", () => {
         bubbleStageRadius,
         CONFIG.tailHeight,
         adjustedTopInset,
-        CONFIG.sideInset,
+        sideInset,
         bubbleTailGeometry,
         bubbleRightInset
       );
@@ -506,7 +536,7 @@ window.addEventListener("load", () => {
         finalCornerLiftStageRadius,
         CONFIG.tailHeight,
         adjustedTopInset,
-        CONFIG.sideInset,
+        sideInset,
         finalCornerLiftTailGeometry,
         bubbleRightInset
       );
@@ -516,7 +546,7 @@ window.addEventListener("load", () => {
         entrySqueezeStageRadius,
         CONFIG.tailHeight * CONFIG.entrySqueezeStageTailDepthRatio,
         adjustedTopInset,
-        CONFIG.sideInset,
+        sideInset,
         entrySqueezeTailGeometry,
         entrySqueezeRightInset,
         entrySqueezeWave,
@@ -530,7 +560,7 @@ window.addEventListener("load", () => {
         liquidStageRadius,
         CONFIG.tailHeight * CONFIG.liquidStageTailDepthRatio,
         adjustedTopInset,
-        CONFIG.sideInset,
+        sideInset,
         liquidTailGeometry,
         liquidRightInset,
         liquidWave,
@@ -546,7 +576,7 @@ window.addEventListener("load", () => {
         concaveStageRadius,
         CONFIG.tailHeight * CONFIG.concaveStageTailDepthRatio,
         adjustedTopInset,
-        CONFIG.sideInset,
+        sideInset,
         concaveTailGeometry,
         concaveRightInset,
         concaveWave,

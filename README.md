@@ -47,8 +47,9 @@ Notes:
 - The script waits for `window.load`.
 - On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v12-explicit-leave-speed)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
-- The resting pill path now uses the live `.nav-pill` wrapper width/height directly, without extra measurement padding, so the default outline tracks the Webflow element box exactly.
-- The SVG sets `preserveAspectRatio="none"` and `overflow="visible"` so the hover tail can extend below the pill without shrinking or letterboxing the base shape inside the wrapper.
+- The resting pill path maps to the live `.nav-pill` wrapper width/height exactly, but the script renders the SVG box larger than the wrapper with configurable overflow padding so the hover morph can extend past the pill without shrinking the base outline.
+- Overflow padding defaults are controlled by `overflowPadXRatio`/`overflowPadXMin`, `overflowPadTopRatio`/`overflowPadTopMin`, and `overflowPadBottomRatio`/`overflowPadBottomMin`.
+- The SVG sets `preserveAspectRatio="none"` and is offset upward/leftward to keep the base outline aligned with the wrapper while exposing extra drawable area around it.
 - Current spacing defaults set `sideInset`, `topInset`, and `bottomInset` to `0`, so the pill body uses the full measured wrapper box.
 - Corner rounding is controlled by:
   - `radiusRatio` (`0.5` = fully pill-shaped ends, based on body height)
@@ -89,6 +90,7 @@ Notes:
 
 **Assumptions**
 - `.nav-pill` integration CSS positions/overlays the SVG behind label content (for example using relative/absolute stacking and `pointer-events` handling).
+- `.nav-pill` and surrounding nav layout allow visible overflow if the hover tail is meant to extend outside the pill wrapper.
 - `.nav-pill` elements are hoverable desktop targets; touch-only interactions are not handled by this script.
 
 ---
