@@ -1,5 +1,5 @@
 window.addEventListener("load", () => {
-  const SCRIPT_VERSION = "2026.03.11.21";
+  const SCRIPT_VERSION = "2026.03.12.01";
   console.log(`[nav_pill] v${SCRIPT_VERSION} loaded (morph-mode: liquid-s-concave-settle-v12-explicit-leave-speed)`);
 
   if (!window.gsap || !window.MorphSVGPlugin) {
@@ -14,10 +14,20 @@ window.addEventListener("load", () => {
     radiusRatio: 0.5,
     // keeps very small pills from becoming too square
     minRadius: 14,
-    tailWidth: 25,
-    tailHeight: 30,
-    tailOffsetX: 18,
-    tailTipOffsetX: 18,
+    tailScaleCssVar: "--_nav---tail-scale",
+    tailReferenceHeight: 30,
+    tailHeightRatio: 0.44,
+    tailHeightMin: 14,
+    tailHeightMax: 26,
+    tailWidthRatio: 0.66,
+    tailWidthMin: 18,
+    tailWidthMax: 34,
+    tailOffsetXRatio: 0.18,
+    tailOffsetXMin: 6,
+    tailOffsetXMax: 18,
+    tailTipOffsetXRatio: 0.18,
+    tailTipOffsetXMin: 6,
+    tailTipOffsetXMax: 18,
     // keeps tail geometry away from the far-right corner to soften arc bulge
     rightCornerGuard: 7,
     minTailSpan: 7,
@@ -84,8 +94,8 @@ window.addEventListener("load", () => {
     overflowPadXMin: 6,
     overflowPadTopRatio: 0.04,
     overflowPadTopMin: 2,
-    overflowPadBottomRatio: 0.85,
-    overflowPadBottomMin: 30,
+    overflowPadBottomTailFactor: 1.05,
+    overflowPadBottomMin: 14,
 
     // visual spacing around the body shape
     sideInset: 0,
@@ -99,6 +109,14 @@ window.addEventListener("load", () => {
 
   function morphDuration(baseSeconds, slowFactor) {
     return baseSeconds * slowFactor;
+  }
+
+  function readCssNumber(styles, propertyName) {
+    const rawValue = styles.getPropertyValue(propertyName).trim();
+    if (!rawValue) return null;
+
+    const value = Number.parseFloat(rawValue);
+    return Number.isFinite(value) ? value : null;
   }
 
   function resolveStageRadius(baseRadius, radiusRatio, bodyH, width, sideInset, rightInset, minRadiusPx) {
@@ -151,6 +169,45 @@ window.addEventListener("load", () => {
     return {
       startY: clampedStart,
       endY: clampedEnd
+    };
+  }
+
+  function getTailMetrics(pill, pillH) {
+    const styles = window.getComputedStyle(pill);
+    const tailScaleOverride = readCssNumber(styles, CONFIG.tailScaleCssVar);
+    const tailScale = tailScaleOverride && tailScaleOverride > 0 ? tailScaleOverride : 1;
+
+    const tailHeight = clamp(
+      clamp(pillH * CONFIG.tailHeightRatio, CONFIG.tailHeightMin, CONFIG.tailHeightMax) * tailScale,
+      1,
+      Number.POSITIVE_INFINITY
+    );
+    const tailWidth = clamp(
+      clamp(pillH * CONFIG.tailWidthRatio, CONFIG.tailWidthMin, CONFIG.tailWidthMax) * tailScale,
+      1,
+      Number.POSITIVE_INFINITY
+    );
+    const tailOffsetX = clamp(
+      clamp(pillH * CONFIG.tailOffsetXRatio, CONFIG.tailOffsetXMin, CONFIG.tailOffsetXMax) * tailScale,
+      0,
+      Number.POSITIVE_INFINITY
+    );
+    const tailTipOffsetX = clamp(
+      clamp(pillH * CONFIG.tailTipOffsetXRatio, CONFIG.tailTipOffsetXMin, CONFIG.tailTipOffsetXMax) * tailScale,
+      0,
+      Number.POSITIVE_INFINITY
+    );
+    const motionScale = tailHeight / CONFIG.tailReferenceHeight;
+
+    return {
+      tailScale,
+      tailHeight,
+      tailWidth,
+      tailOffsetX,
+      tailTipOffsetX,
+      motionScale,
+      rightCornerGuard: Math.max(3, CONFIG.rightCornerGuard * motionScale),
+      minTailSpan: Math.max(4, CONFIG.minTailSpan * motionScale)
     };
   }
 
@@ -340,9 +397,11 @@ window.addEventListener("load", () => {
 
     function buildPaths() {
       const { pillW, pillH } = measure();
+      const tailMetrics = getTailMetrics(pill, pillH);
       const overflowPadX = Math.max(
         CONFIG.overflowPadXMin,
-        pillW * CONFIG.overflowPadXRatio
+        pillW * CONFIG.overflowPadXRatio,
+        tailMetrics.tailWidth * 0.35
       );
       const overflowPadTop = Math.max(
         CONFIG.overflowPadTopMin,
@@ -350,7 +409,7 @@ window.addEventListener("load", () => {
       );
       const overflowPadBottom = Math.max(
         CONFIG.overflowPadBottomMin,
-        pillH * CONFIG.overflowPadBottomRatio
+        tailMetrics.tailHeight * CONFIG.overflowPadBottomTailFactor
       );
       const w = pillW + (overflowPadX * 2);
       const svgH = pillH + overflowPadTop + overflowPadBottom;
@@ -447,56 +506,56 @@ window.addEventListener("load", () => {
       const entrySqueezeTailGeometry = getSoftBubbleTailGeometry(
         w,
         entrySqueezeStageRadius,
-        CONFIG.tailWidth,
-        CONFIG.tailOffsetX,
-        CONFIG.tailTipOffsetX + CONFIG.entrySqueezeStageTailTipOffsetAdjust,
+        tailMetrics.tailWidth,
+        tailMetrics.tailOffsetX,
+        tailMetrics.tailTipOffsetX + (CONFIG.entrySqueezeStageTailTipOffsetAdjust * tailMetrics.motionScale),
         sideInset,
-        CONFIG.rightCornerGuard,
-        CONFIG.minTailSpan,
+        tailMetrics.rightCornerGuard,
+        tailMetrics.minTailSpan,
         entrySqueezeRightInset
       );
       const bubbleTailGeometry = getSoftBubbleTailGeometry(
         w,
         bubbleStageRadius,
-        CONFIG.tailWidth,
-        CONFIG.tailOffsetX,
-        CONFIG.tailTipOffsetX,
+        tailMetrics.tailWidth,
+        tailMetrics.tailOffsetX,
+        tailMetrics.tailTipOffsetX,
         sideInset,
-        CONFIG.rightCornerGuard,
-        CONFIG.minTailSpan,
+        tailMetrics.rightCornerGuard,
+        tailMetrics.minTailSpan,
         bubbleRightInset
       );
       const finalCornerLiftTailGeometry = getSoftBubbleTailGeometry(
         w,
         finalCornerLiftStageRadius,
-        CONFIG.tailWidth,
-        CONFIG.tailOffsetX,
-        CONFIG.tailTipOffsetX,
+        tailMetrics.tailWidth,
+        tailMetrics.tailOffsetX,
+        tailMetrics.tailTipOffsetX,
         sideInset,
-        CONFIG.rightCornerGuard,
-        CONFIG.minTailSpan,
+        tailMetrics.rightCornerGuard,
+        tailMetrics.minTailSpan,
         bubbleRightInset
       );
       const liquidTailGeometry = getSoftBubbleTailGeometry(
         w,
         liquidStageRadius,
-        CONFIG.tailWidth,
-        CONFIG.tailOffsetX,
-        CONFIG.tailTipOffsetX + CONFIG.liquidStageTailTipOffsetAdjust,
+        tailMetrics.tailWidth,
+        tailMetrics.tailOffsetX,
+        tailMetrics.tailTipOffsetX + (CONFIG.liquidStageTailTipOffsetAdjust * tailMetrics.motionScale),
         sideInset,
-        CONFIG.rightCornerGuard,
-        CONFIG.minTailSpan,
+        tailMetrics.rightCornerGuard,
+        tailMetrics.minTailSpan,
         liquidRightInset
       );
       const concaveTailGeometry = getSoftBubbleTailGeometry(
         w,
         concaveStageRadius,
-        CONFIG.tailWidth,
-        CONFIG.tailOffsetX,
-        CONFIG.tailTipOffsetX + CONFIG.concaveStageTailTipOffsetAdjust,
+        tailMetrics.tailWidth,
+        tailMetrics.tailOffsetX,
+        tailMetrics.tailTipOffsetX + (CONFIG.concaveStageTailTipOffsetAdjust * tailMetrics.motionScale),
         sideInset,
-        CONFIG.rightCornerGuard,
-        CONFIG.minTailSpan,
+        tailMetrics.rightCornerGuard,
+        tailMetrics.minTailSpan,
         concaveRightInset
       );
 
@@ -524,7 +583,7 @@ window.addEventListener("load", () => {
         w,
         bodyH,
         bubbleStageRadius,
-        CONFIG.tailHeight,
+        tailMetrics.tailHeight,
         adjustedTopInset,
         sideInset,
         bubbleTailGeometry,
@@ -534,7 +593,7 @@ window.addEventListener("load", () => {
         w,
         bodyH,
         finalCornerLiftStageRadius,
-        CONFIG.tailHeight,
+        tailMetrics.tailHeight,
         adjustedTopInset,
         sideInset,
         finalCornerLiftTailGeometry,
@@ -544,7 +603,7 @@ window.addEventListener("load", () => {
         w,
         bodyH,
         entrySqueezeStageRadius,
-        CONFIG.tailHeight * CONFIG.entrySqueezeStageTailDepthRatio,
+        tailMetrics.tailHeight * CONFIG.entrySqueezeStageTailDepthRatio,
         adjustedTopInset,
         sideInset,
         entrySqueezeTailGeometry,
@@ -558,7 +617,7 @@ window.addEventListener("load", () => {
         w,
         bodyH,
         liquidStageRadius,
-        CONFIG.tailHeight * CONFIG.liquidStageTailDepthRatio,
+        tailMetrics.tailHeight * CONFIG.liquidStageTailDepthRatio,
         adjustedTopInset,
         sideInset,
         liquidTailGeometry,
@@ -574,7 +633,7 @@ window.addEventListener("load", () => {
         w,
         bodyH,
         concaveStageRadius,
-        CONFIG.tailHeight * CONFIG.concaveStageTailDepthRatio,
+        tailMetrics.tailHeight * CONFIG.concaveStageTailDepthRatio,
         adjustedTopInset,
         sideInset,
         concaveTailGeometry,

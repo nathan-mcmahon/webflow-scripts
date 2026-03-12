@@ -47,8 +47,10 @@ Notes:
 - The script waits for `window.load`.
 - On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v12-explicit-leave-speed)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
+- Tail size derives from the measured `.nav-pill` height, so changes to Webflow pill padding and text size automatically retune tail length, width, and horizontal pull.
+- Optional inherited CSS custom property `--_nav---tail-scale` can art-direct the tail globally or per pill (`1` = default, `0.85` = smaller tail, `1.15` = larger tail).
 - The resting pill path maps to the live `.nav-pill` wrapper width/height exactly, but the script renders the SVG box larger than the wrapper with configurable overflow padding so the hover morph can extend past the pill without shrinking the base outline.
-- Overflow padding defaults are controlled by `overflowPadXRatio`/`overflowPadXMin`, `overflowPadTopRatio`/`overflowPadTopMin`, and `overflowPadBottomRatio`/`overflowPadBottomMin`.
+- Overflow padding defaults are controlled by `overflowPadXRatio`/`overflowPadXMin`, `overflowPadTopRatio`/`overflowPadTopMin`, and `overflowPadBottomTailFactor`/`overflowPadBottomMin`; bottom padding scales with the derived tail height.
 - The SVG sets `preserveAspectRatio="none"` and is offset upward/leftward to keep the base outline aligned with the wrapper while exposing extra drawable area around it.
 - Current spacing defaults set `sideInset`, `topInset`, and `bottomInset` to `0`, so the pill body uses the full measured wrapper box.
 - Corner rounding is controlled by:
@@ -57,8 +59,9 @@ Notes:
 - Radius is clamped to safe geometry bounds before path generation.
 - Bubble-tail softening is controlled by:
   - `rightCornerGuard` (keeps right-side tail geometry away from the corner arc)
-  - `tailTipOffsetX` (how far the tip leads horizontally)
-  - `minTailSpan` (minimum base width so the tail keeps a liquid pull)
+  - `tailHeightRatio`/`tailHeightMin`/`tailHeightMax`, `tailWidthRatio`/`tailWidthMin`/`tailWidthMax`, `tailOffsetXRatio`/`tailOffsetXMin`/`tailOffsetXMax`, and `tailTipOffsetXRatio`/`tailTipOffsetXMin`/`tailTipOffsetXMax` (all derived from live pill height)
+  - `--_nav---tail-scale` (optional multiplier applied after those derived dimensions)
+  - `minTailSpan` (minimum base width so the tail keeps a liquid pull, scaled with derived tail size)
 - Bubble right-side protrusion compensation is controlled by:
   - `bubbleRightInsetRatio` (inset amount derived from current radius)
   - `bubbleRightInsetMin` and `bubbleRightInsetMax` (bounds for that inset)
@@ -91,6 +94,7 @@ Notes:
 **Assumptions**
 - `.nav-pill` integration CSS positions/overlays the SVG behind label content (for example using relative/absolute stacking and `pointer-events` handling).
 - `.nav-pill` and surrounding nav layout allow visible overflow if the hover tail is meant to extend outside the pill wrapper.
+- If `--_nav---tail-scale` is set, it resolves to a positive numeric value.
 - `.nav-pill` elements are hoverable desktop targets; touch-only interactions are not handled by this script.
 
 ---
