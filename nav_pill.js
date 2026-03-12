@@ -81,10 +81,7 @@ window.addEventListener("load", () => {
     // visual spacing around the body shape
     sideInset: 0,
     topInset: 0,
-    bottomInset: 0,
-
-    // keeps the body centered in the taller SVG canvas
-    tailCenterCompensation: 0.3
+    bottomInset: 0
   };
 
   function clamp(value, min, max) {
@@ -326,8 +323,8 @@ window.addEventListener("load", () => {
     function measure() {
       const rect = pill.getBoundingClientRect();
 
-      const w = Math.max(80, Math.round(rect.width + 20));
-      const visibleH = Math.max(44, Math.round(rect.height + 18));
+      const w = Math.max(1, rect.width);
+      const visibleH = Math.max(1, rect.height);
 
       return { w, visibleH };
     }
@@ -338,13 +335,9 @@ window.addEventListener("load", () => {
       // fixed body height, regardless of tail height
       const bodyH = visibleH - CONFIG.topInset - CONFIG.bottomInset;
 
-      // total svg height increases when tail gets deeper
-      const svgH = visibleH + CONFIG.tailHeight;
-
-      // push both pill and bubble body down by half the tail height
-      // so the body stays visually centered around the label
-      const adjustedTopInset =
-        CONFIG.topInset + (CONFIG.tailHeight * CONFIG.tailCenterCompensation);
+      // Keep the resting pill aligned to the rendered .nav-pill box.
+      // The hover tail renders outside that box via SVG overflow.
+      const adjustedTopInset = CONFIG.topInset;
 
       const maxRadius = Math.min(
         bodyH / 2,
@@ -483,7 +476,11 @@ window.addEventListener("load", () => {
         concaveRightInset
       );
 
-      svg.setAttribute("viewBox", `0 0 ${w} ${svgH}`);
+      svg.setAttribute("viewBox", `0 0 ${w} ${visibleH}`);
+      svg.setAttribute("preserveAspectRatio", "none");
+      svg.setAttribute("width", `${w}`);
+      svg.setAttribute("height", `${visibleH}`);
+      svg.setAttribute("overflow", "visible");
 
       const pillD = makePillPath(
         w,

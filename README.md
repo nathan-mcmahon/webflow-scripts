@@ -47,8 +47,9 @@ Notes:
 - The script waits for `window.load`.
 - On load it logs a version marker to the browser console: ``[nav_pill] v<version> loaded (morph-mode: liquid-s-concave-settle-v12-explicit-leave-speed)``.
 - Shape dimensions are based on each pill’s live `getBoundingClientRect()` values.
-- The SVG `viewBox` includes extra height for tail depth during morph.
-- Current spacing defaults set `sideInset`, `topInset`, and `bottomInset` to `0`, so the pill body uses the full measured label height before tail-centering compensation is applied.
+- The resting pill path now uses the live `.nav-pill` wrapper width/height directly, without extra measurement padding, so the default outline tracks the Webflow element box exactly.
+- The SVG sets `preserveAspectRatio="none"` and `overflow="visible"` so the hover tail can extend below the pill without shrinking or letterboxing the base shape inside the wrapper.
+- Current spacing defaults set `sideInset`, `topInset`, and `bottomInset` to `0`, so the pill body uses the full measured wrapper box.
 - Corner rounding is controlled by:
   - `radiusRatio` (`0.5` = fully pill-shaped ends, based on body height)
   - `minRadius` (keeps small pills from looking too square)
