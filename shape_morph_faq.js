@@ -51,10 +51,10 @@ window.addEventListener("load", () => {
     sideInset: 6,
     topInset: 8,
     bottomInset: 8,
-    openFill: "var(--neutral-light)",
+    openFill: "var(--_palette---mint)",
     textColors: {
-      closed: "var(--neutral-light)",
-      open: "var(--extra-dark-green)"
+      closed: "var(--_palette---mint)",
+      open: "var(--_palette---dark-forest)"
     }
   };
 
